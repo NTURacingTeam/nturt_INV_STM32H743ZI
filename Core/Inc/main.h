@@ -31,14 +31,13 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "motor_control.h"
-#include "sincos_encoder.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "config.h"
-#include "canid.h"
+
+#include "nturt_inv/config.h"
+
 // #include "filter_coe.h"
 /* USER CODE END Includes */
 

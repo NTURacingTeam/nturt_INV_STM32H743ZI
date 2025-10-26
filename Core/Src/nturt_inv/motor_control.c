@@ -15,7 +15,7 @@
 extern float zero_electric_angle;
 extern int pole_pairs;
 extern float shaft_angle;
-extern int dir;
+extern int enc_dir;
 extern float voltage_limit;
 extern float voltage_power_supply;
 extern int period;
@@ -45,7 +45,7 @@ float _normalizeAngle(float angle){
 }
 
 float _electricalAngle(float shaft_angle, int pole_pairs) {
-  return _normalizeAngle(((float)(dir * pole_pairs)*shaft_angle)-zero_electric_angle);
+  return _normalizeAngle(((float)(enc_dir * pole_pairs)*shaft_angle)-zero_electric_angle);
 }
 
 void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {

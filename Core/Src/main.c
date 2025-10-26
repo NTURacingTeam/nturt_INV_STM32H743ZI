@@ -35,19 +35,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <math.h>
-// #include "usbd_cdc_if.h"
-#include "string.h"
-// #include "as5048a.h"
-#include "pid.h"
-#include "lowpass_filter.h"
-#include "current_sense.h"
-#include "inverter_state.h"
-#include "logger.h"
-// #include "stdio.h"
-// #include "stm32h7xx_hal_tim_ex.h"
-#include "time.h"
-#include "arm_math.h"
+#include "nturt_inv/nturt_inv.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,14 +44,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#ifndef M_PI
-  #define M_PI 3.14159265358979323846
-#endif
-#define MAX_ANGLE_VALUE 4096
-#define CLEAR_BIT(REG, BIT)   ((REG) &= ~(BIT))
-#define CODE_VER 0x3
-// #define NUM_SECTIONS 7 // Number of sections in the Biquad filter
-#define NUM_TAPS 558
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -80,63 +60,46 @@ void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
 static void MPU_Config(void);
 /* USER CODE BEGIN PFP */
-float MCU_MapValue(uint16_t in_value, float in_min, float in_max, float out_min, float out_max);
-float MCU_TemperatureCalculate(uint16_t ts_data);
-void Enter_ERROR_State(INV_Errortypedef error);
-void Config_Fdcan1(void);
-void CAN_Send_State(uint16_t DCV, int16_t DCA);
-void CAN_Send_Status(uint16_t report_status,int16_t FB_Torque,int16_t Speed);
-void CAN_Send_Temp(uint16_t ADC_arr[6]);
-void CAN_Send_Heartbeat(void);
-void CAN_Send_Perameter(void);
-void set_time (uint8_t hr, uint8_t min, uint8_t sec);
-void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-volatile int code_ver = 5;
+// for uart debug, not used currently
+__attribute__((section("._RAM_Area"))) static char tdata[500]; 
 
-char data[500];
-__attribute__((section("._RAM_Area"))) static char tdata[500];
+// for sd card logging
+__attribute__((section("._RAM_Area"))) FATFS SD_FatFS_RAM;  /* File system object for SD card logical drive */
+__attribute__((section("._RAM_Area"))) FIL SD_File;     /* File object */
+__attribute__((section("._RAM_Area"))) logger_t SD_log_buf[2][3600];//Logging Buffers
 
-__attribute__((section("._RAM_Area"))) FATFS SDFatFS_RAM;  /* File system object for SD card logical drive */
-__attribute__((section("._RAM_Area"))) FIL MyFile;     /* File object */
+uint8_t SD_wr_log_buf_num = 0;
+uint16_t SD_wr_log_index = 0;
+RTC_DateTypeDef SD_log_date;
+RTC_TimeTypeDef SD_log_time;
+uint8_t SD_log_prev_sec = 0;
+uint16_t SD_log_subsec = 0;
 
-//Logging Buffers
-__attribute__((section("._RAM_Area"))) logger_t log_buf[2][3600];
-// __attribute__((section("._RAM_Area"))) logger_t log_test[2][2];
-uint8_t wr_log_buf_num = 0;
-uint16_t wr_log_index = 0;
-RTC_DateTypeDef log_date;
-RTC_TimeTypeDef log_time;
-uint8_t last_sec = 0;
-uint16_t log_subsec = 0;
+// for main loop run once very two timer interrupt
+uint8_t nturt_main_run = 0;
 
-//Moving RMS Buffers
-int16_t RMS_buf[3][10000] = {{0}};
-uint32_t RMS_sum[3] = {0};
-uint16_t indexRMS = 0;
+// for hard ware oc
+uint8_t oc_hw_buf[HW_OC_TIME] = {0};
+uint16_t oc_hw_index = 0;
+uint16_t oc_hw_sum = 0;
 
-uint8_t run = 0;
+// for soft oc
+uint8_t oc_sw_buf[SOFT_OC_TIME] = {0};
+uint16_t oc_sw_index = 0;
+uint16_t oc_sw_sum = 0;
 
-// __attribute__((section("._RAM_D2_Area")))
-uint8_t oc_buf[HW_OC_TIME] = {0};
-uint16_t oc_index = 0;
-uint16_t oc_sum = 0;
-
-// __attribute__((section("._RAM_D2_Area"))) 
-uint8_t soft_oc_buf[SOFT_OC_TIME] = {0};
-uint16_t soft_oc_index = 0;
-uint16_t soft_oc_sum = 0;
-
-// __attribute__((section("._RAM_D2_Area"))) 
+// for angle encoder
 uint8_t enc_buf[ENC_TIME] = {0};
 uint16_t enc_index = 0;
 uint16_t enc_sum = 0;
 
-int16_t T_Report=0;
+// for temperature reading
+int16_t T_Report = 0;
 int16_t T_Mot = 0;
 int16_t T_MCU = 0;
 int16_t T_U;
@@ -144,58 +107,49 @@ int16_t T_V;
 int16_t T_W;
 uint16_t report_DCV;
 
-#ifdef OPEN_LOOP_SPEED
-float open_loop_rpm_var = OPEN_LOOP_RPM;
-float last_angle = 0.0f;
-#endif
-
-//FOC variables
-float open_loop_timestamp=0;
-float zero_electric_angle=ZERO_ELECTRIC_ANGLE;
-float shaft_angle=0;
-float voltage_limit=440;
-float voltage_power_supply=440;
-int period=CCR; // period for the PWM
-int dir=1; // anti clockwise direction is 1 , clockwise is -1
-// int dir = DIR; // anti clockwise direction is 1 , clockwise is -1
-int pole_pairs=1;
-float angle_now;
-float zero_cross = 0.0f;
-const float ACAPLSB = -0.1031436f;   // ACAPLSB = 3.3/15.626e-3/adc1_range
-const float omega_fieldweaking = 3000.0f;
-float filtered_RPM;
-// int int_RPM;
-float filtered_Iq;
-float filtered_Id;
+//FOC and motor control variables
+float open_loop_timestamp = 0;
+float zero_electric_angle = ZERO_ELECTRIC_ANGLE;
+float shaft_angle = 0;
+float voltage_limit = 440;
+float voltage_power_supply = 440;
+int period = CCR; // period for the PWM
+int enc_dir = 1; // 1 for normal encoder mounting direction, -1 for reverse
+int pole_pairs = 1; // motor pole pairs / encoder pole pairs
+float angle_now; // rad
+const float phase_amp_per_LSB = -0.1031436f;   // phase_amp_per_LSB = 3.3/15.626e-3/adc1_range
+float filt_RPM;
+float filt_Iq;
+float filt_Id;
 float Ia;
 float Iq_controller_output;
 float Id_controller_output;
-float Ia_controller_output;
-int enable_hw_oc = 0;
+int enable_hw_oc = 0; // hardware overcurrent protection enable flag
 uint8_t enable_dc_control = 0;
 const float derate_a = 1/(DERATE_START-DERATE_END);
 const float derate_b = DERATE_END/(DERATE_START-DERATE_END); 
 
-int indexLED=0;
-int indexHeartbeat=0;
-int indexStatus=0;
+// LEDs and status indicators
+int indexLED = 0;
+int indexHeartbeat = 0;
+int indexStatus = 0;
 int indexTimer = 0;
-uint32_t prev_new_file = 0;
+uint32_t prev_new_file_time = 0;
 int prev_sd = 0;
 int prevWhileTest = 0;
 uint8_t got_date = 0;
-uint8_t last_got_date = 0;
+uint8_t prev_got_date = 0;
 
 int freq = FREQ;
-float Ts=(float)1/FREQ;
+float Ts = (float)1/FREQ;
 // float angle_prev=-1.0f;
 const float torque_constant = 0.291f; //Nm/A
 const float electrical_constant = 0.031f; //rad/s/V
 const float max_torque = 25;
 const float max_current = 70;
-float percent_torque_requested = 0.0f;
-float last_percent = 0.0f;
-float abs_last_percent = 0.0f;
+float percent_trq_request = 0.0f;
+float prev_percent_trq_request = 0.0f;
+float abs_prev_percent = 0.0f;
 uint16_t current_offset[4];
 float current_phase[3];
 int16_t Mot_Conv[1024] = {0};
@@ -207,6 +161,7 @@ const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range
 float max_ramp = 1/FREQ/RAMP_TIME_DERATE;
 uint8_t fast_stop_enable = 1;
 
+// for execution timing analysis
 #ifdef TIMING
 int max_time = 0;
 int min_time = INT32_MAX;
@@ -307,7 +262,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  code_ver = CODE_VER;
   volatile FRESULT res;                                 /* FatFs function common result code */
 	uint32_t byteswritten;                     /* File write/read counts */
 	// uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
@@ -316,7 +270,7 @@ int main(void)
   pid_controller_current_Iq.limit = voltage_limit;
   pid_controller_current_OCP.limit = voltage_limit;
   // uint8_t wlooptext[] = "This is STM32 working with FatFs in main loop\n"; /* File write buffer */
-  // log_buf[0][0].LGSTATE = 0;
+  // SD_log_buf[0][0].LGSTATE = 0;
   for (size_t i = 0; i < 1024; i++)
   {
     Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
@@ -412,7 +366,7 @@ int main(void)
   volatile int sdcard_status = HAL_SD_GetCardState(&hsd1);  
   if(sdcard_status == HAL_SD_CARD_TRANSFER)
   {
-    res = f_mount(&SDFatFS_RAM,(TCHAR const*)SDPath,1);
+    res = f_mount(&SD_FatFS_RAM,(TCHAR const*)SDPath,1);
     // res = f_mount(&SDFatFS,"0",0);
     if (res != FR_OK)
     {
@@ -421,7 +375,7 @@ int main(void)
     else
     {
       #ifdef SDDEBUG
-      res = f_open(&MyFile,TestFPath,FA_CREATE_ALWAYS | FA_WRITE);
+      res = f_open(&SD_File,TestFPath,FA_CREATE_ALWAYS | FA_WRITE);
       if (res != FR_OK)
       {
         Error_Handler();
@@ -429,8 +383,8 @@ int main(void)
       else
       {
         set_one(log_test);
-        f_write(&MyFile,&log_test,sizeof(log_test),(void *)&byteswritten);
-        res = f_close(&MyFile);
+        f_write(&SD_File,&log_test,sizeof(log_test),(void *)&byteswritten);
+        res = f_close(&SD_File);
         if(res!=FR_OK)
         {
           Error_Handler();
@@ -504,17 +458,17 @@ int main(void)
   // }  
 
   //Get DateTime
-  HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
-  HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);  
+  HAL_RTC_GetDate(&hrtc,&SD_log_date,RTC_FORMAT_BIN);
+  HAL_RTC_GetTime(&hrtc,&SD_log_time,RTC_FORMAT_BIN);  
 
-  snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+  snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)SD_log_date.Year+2000,(int)SD_log_date.Month,(int)SD_log_date.Date,(int)SD_log_time.Hours,(int)SD_log_time.Minutes,(int)SD_log_time.Seconds);
   // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-  res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
+  res = f_open(&SD_File,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
   if(res == FR_OK)
   {
-    f_close(&MyFile);
+    f_close(&SD_File);
   }
-  f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+  f_open(&SD_File,TextFPath,FA_OPEN_APPEND|FA_WRITE);
 
   HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
   inverter_state = STATE_READY;
@@ -529,7 +483,7 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim1); 
   HAL_TIM_Base_Start_IT(&htim3);
   prev_sd = __HAL_TIM_GET_COUNTER(&htim2);
-  prev_new_file = __HAL_TIM_GET_COUNTER(&htim2);
+  prev_new_file_time = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -543,42 +497,42 @@ int main(void)
     // continue;
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
     // uint32_t whileTest = sd_now;
-    if (sd_now - prev_new_file >= 3000000)
+    if (sd_now - prev_new_file_time >= 3000000)
     {
-      f_close(&MyFile);
-      snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+      f_close(&SD_File);
+      snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)SD_log_date.Year+2000,(int)SD_log_date.Month,(int)SD_log_date.Date,(int)SD_log_time.Hours,(int)SD_log_time.Minutes,(int)SD_log_time.Seconds);
       // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-      res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
+      res = f_open(&SD_File,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
       if(res == FR_OK)
       {
-        f_close(&MyFile);
+        f_close(&SD_File);
       }
-      f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
-      prev_new_file = sd_now;
+      f_open(&SD_File,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+      prev_new_file_time = sd_now;
     }    
     if (sd_now - prev_sd >= 1000)
     {
       HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_SET);
 
-      if(last_got_date != got_date)
+      if(prev_got_date != got_date)
       {
-        f_close(&MyFile);
-        snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)log_date.Year+2000,(int)log_date.Month,(int)log_date.Date,(int)log_time.Hours,(int)log_time.Minutes,(int)log_time.Seconds);
+        f_close(&SD_File);
+        snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)SD_log_date.Year+2000,(int)SD_log_date.Month,(int)SD_log_date.Date,(int)SD_log_time.Hours,(int)SD_log_time.Minutes,(int)SD_log_time.Seconds);
         // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
-        res = f_open(&MyFile,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
+        res = f_open(&SD_File,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
         if(res == FR_OK)
         {
-          f_close(&MyFile);
+          f_close(&SD_File);
         }
-        f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+        f_open(&SD_File,TextFPath,FA_OPEN_APPEND|FA_WRITE);
       }
             
       
       __disable_irq();
-      uint8_t buf_num_to_sd = wr_log_buf_num;
-      uint16_t index_to_sd = wr_log_index;
-      wr_log_buf_num^=0x1;
-      wr_log_index = 0;
+      uint8_t buf_num_to_sd = SD_wr_log_buf_num;
+      uint16_t index_to_sd = SD_wr_log_index;
+      SD_wr_log_buf_num^=0x1;
+      SD_wr_log_index = 0;
       __enable_irq();
 
       if(max_sd_buf<index_to_sd)
@@ -586,26 +540,26 @@ int main(void)
         max_sd_buf = index_to_sd;
       }
 
-      res = f_write(&MyFile,log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
+      res = f_write(&SD_File,SD_log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
       while (res != FR_OK)
       {
         if (res == FR_DISK_ERR)
         {
-          f_open(&MyFile,TextFPath,FA_OPEN_APPEND|FA_WRITE);
+          f_open(&SD_File,TextFPath,FA_OPEN_APPEND|FA_WRITE);
         }
         else
         {
           break;
         }
-        res = f_write(&MyFile,log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
+        res = f_write(&SD_File,SD_log_buf[buf_num_to_sd],index_to_sd*sizeof(logger_t),(void *)&byteswritten);
         if (res == FR_OK)
         {
           break;
         }
       }
-      f_sync(&MyFile);
+      f_sync(&SD_File);
 
-      last_got_date = got_date;
+      prev_got_date = got_date;
 
       #ifdef TIMING
       sd_td = __HAL_TIM_GET_COUNTER(&htim2) - sd_now;
@@ -623,9 +577,9 @@ int main(void)
     {
       prev_sd = sd_now;
     }
-    if (sd_now - prev_new_file >= 3000000)
+    if (sd_now - prev_new_file_time >= 3000000)
     {
-      prev_new_file = sd_now;
+      prev_new_file_time = sd_now;
     }
   }
   /* USER CODE END 3 */
@@ -723,12 +677,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   // Check which version of the timer triggered this callback and toggle LED
   if (htim == &htim1)
   {
-    if(!run)
-    {
-      run = 1;
+    if(!nturt_main_run) { // do once every two trigger
+      nturt_main_run = 1;
       return;
     }
-    run = 0;
+    nturt_main_run = 0;
     HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
     uint16_t ADC1_arr[4] = {0};
     uint16_t ADC2_arr[4] = {0};
@@ -751,9 +704,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }    
     if(inverter_state == STATE_RUNNING)
     {      
-      float delta = percent_torque_requested - last_percent;
+      float delta = percent_trq_request - prev_percent_trq_request;
       delta = _constrain(delta,-max_ramp,max_ramp);
-      if(last_percent != 0.0f && percent_torque_requested == 0.0f)
+      if(prev_percent_trq_request != 0.0f && percent_trq_request == 0.0f)
       {
         if(fast_stop_enable)
         {
@@ -764,15 +717,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             PID_integral_reset(&pid_controller_current_Iabc[i]);
           }
         }
-        last_percent = 0.0f;
+        prev_percent_trq_request = 0.0f;
       }
-      last_percent = last_percent + delta;
-      last_percent = percent_torque_requested;
+      prev_percent_trq_request = prev_percent_trq_request + delta;
+      prev_percent_trq_request = percent_trq_request;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
     }
     else
     {
-      last_percent = 0.0f;
+      prev_percent_trq_request = 0.0f;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
     }
     if(inverter_state == STATE_READY|| inverter_state == STATE_ERROR)
@@ -786,7 +739,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         PID_reset(&pid_controller_current_Iabc[i]);
       }
       
-      // pid_controller_current_Iq.output_prev = dir*filtered_RPM/electrical_constant;
+      // pid_controller_current_Iq.output_prev = dir*filt_RPM/electrical_constant;
     }
     
     #ifdef TIMING
@@ -841,19 +794,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     // float filtered_angle = LowPassFilter_operator(angle_now,&filter);
     
     float angular_vel = 0.0f;
-    zero_cross += cal_angular_vel(angle_now,&angular_vel);
-    float raw_RPM = (float)dir*angular_vel/4/2/M_PI*60;
-    filtered_RPM = LowPassFilter_operator((float)dir*angular_vel/4/2/M_PI*60,&filter_RPM);
-    // float target_torque = max_torque*last_percent;
-    float max_derate = _constrain((float)DERATE_END/DERATE_START-(float)abs(filtered_RPM)/DERATE_START,0.0f,1.0f);
-    // last_percent = _constrain(last_percent,-max_derate,max_derate);
-    float target_Iq = max_current*last_percent;
+    float raw_RPM = (float)enc_dir*angular_vel/4/2/M_PI*60;
+    filt_RPM = LowPassFilter_operator((float)enc_dir*angular_vel/4/2/M_PI*60,&filter_RPM);
+    // float target_torque = max_torque*prev_percent_trq_request;
+    float max_derate = _constrain((float)DERATE_END/DERATE_START-(float)abs(filt_RPM)/DERATE_START,0.0f,1.0f);
+    // prev_percent_trq_request = _constrain(prev_percent_trq_request,-max_derate,max_derate);
+    float target_Iq = max_current*prev_percent_trq_request;
     float filtered_Iabc[3] = {0.0f};
     float current_phase_dc[3] = {0.0f};
     int8_t soft_oc_detected = 0;
-    soft_oc_sum = soft_oc_sum - soft_oc_buf[soft_oc_index];
+    oc_sw_sum = oc_sw_sum - oc_sw_buf[oc_sw_index];
     for (int i=0;i<3;i++){
-       	current_phase[i] =(float) (ADC1_arr[i]-current_offset[i])*ACAPLSB;
+       	current_phase[i] =(float) (ADC1_arr[i]-current_offset[i])*phase_amp_per_LSB;
         //OCP
         filtered_Iabc[i] = LowPassFilter_operator(current_phase[i],&filter_current_Iabc[i]);
         current_phase_dc[i] = LowPassFilter_operator(current_phase[i],&filter_crrent_DC_Iabc[i]);
@@ -863,19 +815,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         }
         // current_phase[i] = filtered_Iabc[i];
     }
-    soft_oc_buf[soft_oc_index] = soft_oc_detected;
-    soft_oc_sum += soft_oc_buf[soft_oc_index];
-    if (soft_oc_sum > SOFT_OC_TIME/2)
+    oc_sw_buf[oc_sw_index] = soft_oc_detected;
+    oc_sw_sum += oc_sw_buf[oc_sw_index];
+    if (oc_sw_sum > SOFT_OC_TIME/2)
     {
       if (inverter_state == STATE_RUNNING)
       {
         Enter_ERROR_State(ERROR_INSTANT_OC);
       }    
     }
-    soft_oc_index++;
-    if(soft_oc_index == SOFT_OC_TIME)
+    oc_sw_index++;
+    if(oc_sw_index == SOFT_OC_TIME)
     {
-      soft_oc_index = 0;
+      oc_sw_index = 0;
     }
 
     pid_controller_current_Ia.limit = voltage_limit;
@@ -888,25 +840,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
     float Id,Iq;
     cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
-    filtered_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
-    filtered_Id=LowPassFilter_operator(Id,&filter_current_Id);
-    // filtered_Iq = Iq;
-    // filtered_Id = Id;
-    Ia = sqrt(filtered_Id*filtered_Id+filtered_Iq*filtered_Iq);
+    filt_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
+    filt_Id=LowPassFilter_operator(Id,&filter_current_Id);
+    // filt_Iq = Iq;
+    // filt_Id = Id;
+    Ia = sqrt(filt_Id*filt_Id+filt_Iq*filt_Iq);
 
-    Iq_controller_output=PID_operator(target_Iq-filtered_Iq,&pid_controller_current_Iq);
-    Id_controller_output=PID_operator(-filtered_Id,&pid_controller_current_Id);
+    Iq_controller_output=PID_operator(target_Iq-filt_Iq,&pid_controller_current_Iq);
+    Id_controller_output=PID_operator(-filt_Id,&pid_controller_current_Id);
     
     float Iabc_controller_output[3] = {0.0f};
     for (size_t i = 0; i < 3; i++)
     {
       Iabc_controller_output[i] = PID_operator(-current_phase_dc[i],&pid_controller_current_Iabc[i]);
     }
-    if(abs(filtered_RPM) > 1000 && enable_dc_control == 0)
+    if(abs(filt_RPM) > 1000 && enable_dc_control == 0)
     {
       enable_dc_control = 1;
     }
-    else if (abs(filtered_RPM) < 750 && enable_dc_control == 1)
+    else if (abs(filt_RPM) < 750 && enable_dc_control == 1)
     {
       enable_dc_control = 0;
     }    
@@ -930,7 +882,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
     
     // setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
-    // setPhaseVoltage(percent_torque_requested*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
+    // setPhaseVoltage(percent_trq_request*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
     setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1,-Iabc_controller_output[0],-Iabc_controller_output[1],-Iabc_controller_output[2]);
     
 
@@ -980,13 +932,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     if (indexStatus == freq/100)
     {
-      // int_RPM = (int) lroundf(filtered_RPM);
-      int16_t report_RPM = (int16_t) roundf(filtered_RPM);
-      // int16_t report_RPM = (int16_t) roundf(zero_cross/4*100*60);
-      zero_cross = 0.0f;
-      int16_t report_torque = (int16_t) roundf(filtered_Iq/max_current*1000);
-      // int16_t report_torque = (int16_t) roundf(Ia/max_current*1000);
-      // report_torque = LowPassFilter_operator(report_torque,&filter_report_torque);
+      int16_t report_RPM = (int16_t) roundf(filt_RPM);
+      int16_t report_torque = (int16_t) roundf(filt_Iq/max_current*1000);
       CAN_Send_Status(report_status,report_torque,report_RPM);
       indexStatus = 0;
     }
@@ -995,101 +942,74 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     int16_t IU_100 = (int16_t)roundf(current_phase[0]*100);
     int16_t IV_100 = (int16_t)roundf(current_phase[1]*100);
     int16_t IW_100 = (int16_t)roundf(current_phase[2]*100);
-    HAL_RTC_GetDate(&hrtc,&log_date,RTC_FORMAT_BIN);
-    HAL_RTC_GetTime(&hrtc,&log_time,RTC_FORMAT_BIN);
-    if(log_time.Seconds != last_sec)
+    HAL_RTC_GetDate(&hrtc,&SD_log_date,RTC_FORMAT_BIN);
+    HAL_RTC_GetTime(&hrtc,&SD_log_time,RTC_FORMAT_BIN);
+    if(SD_log_time.Seconds != SD_log_prev_sec)
     {
-      log_subsec = 0;
-      last_sec = log_time.Seconds;
+      SD_log_subsec = 0;
+      SD_log_prev_sec = SD_log_time.Seconds;
     }
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGHR = log_time.Hours;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGMIN = log_time.Minutes;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGSEC = log_time.Seconds;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGERR = error_state;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGSUBSEC = log_subsec;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCV = report_DCV;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCA = report_DCA;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGIU = IU_100;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGIV = IV_100;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGIW = IW_100;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVQ = (int16_t) roundf(Iq_controller_output*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVD = (int16_t) roundf(Id_controller_output*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGSINE = ADC2_arr[0]-ADC2_arr[1];
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGCOS = ADC2_arr[2]-ADC2_arr[3];
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGTCMD = (int16_t) roundf(last_percent*1000);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGSTATE = report_status;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVU = TIM1->CCR1;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVV = TIM1->CCR2;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVW = TIM1->CCR3;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGRPM = (int16_t) roundf(filtered_RPM);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGID = (int16_t) roundf(filtered_Id*100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGIQ = (int16_t) roundf(filtered_Iq*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGZERO = (uint16_t) soft_oc_sum;
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIU = (int16_t) roundf(current_phase_dc[0]*100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIV = (int16_t) roundf(current_phase_dc[1]*100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVA = (int16_t) roundf(angle_pll*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVB = (int16_t) roundf(speed_rad*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGVC = (int16_t) roundf(Iabc_controller_output[2]*10);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIU = (uint16_t) roundf(RMS_sum[0]/100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIV = (uint16_t) roundf(RMS_sum[1]/100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGRMSIW = (uint16_t) roundf(RMS_sum[2]/100);
-    log_buf[wr_log_buf_num][wr_log_index%3600].LGLOGBUF = wr_log_index;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGHR = SD_log_time.Hours;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGMIN = SD_log_time.Minutes;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSEC = SD_log_time.Seconds;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGERR = error_state;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSUBSEC = SD_log_subsec;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCV = report_DCV;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCA = report_DCA;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGIU = IU_100;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGIV = IV_100;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGIW = IW_100;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVQ = (int16_t) roundf(Iq_controller_output*10);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVD = (int16_t) roundf(Id_controller_output*10);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSINE = ADC2_arr[0]-ADC2_arr[1];
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGCOS = ADC2_arr[2]-ADC2_arr[3];
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGTCMD = (int16_t) roundf(prev_percent_trq_request*1000);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSTATE = report_status;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVU = TIM1->CCR1;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVV = TIM1->CCR2;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVW = TIM1->CCR3;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGRPM = (int16_t) roundf(filt_RPM);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGID = (int16_t) roundf(filt_Id*100);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGIQ = (int16_t) roundf(filt_Iq*10);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGZERO = (uint16_t) oc_sw_sum;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCIU = (int16_t) roundf(current_phase_dc[0]*100);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCIV = (int16_t) roundf(current_phase_dc[1]*100);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVA = (int16_t) roundf(angle_pll*10);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVB = (int16_t) roundf(speed_rad*10);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVC = (int16_t) roundf(Iabc_controller_output[2]*10);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGRMSIU = (uint16_t) roundf(-1);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGRMSIV = (uint16_t) roundf(-1);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGRMSIW = (uint16_t) roundf(-1);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGLOGBUF = SD_wr_log_index;
 
         
-    log_subsec++;
-    wr_log_index++;
+    SD_log_subsec++;
+    SD_wr_log_index++;
 
     if(inverter_state == STATE_RUNNING)
     {
-      oc_sum -= oc_buf[oc_index];
+      oc_hw_sum -= oc_hw_buf[oc_hw_index];
       if (HAL_GPIO_ReadPin(OC_Fault_GPIO_Port,OC_Fault_Pin) == GPIO_PIN_RESET)
       {
-        oc_buf[oc_index] = 1;
+        oc_hw_buf[oc_hw_index] = 1;
       }
       else
       {
-        oc_buf[oc_index] = 0;
+        oc_hw_buf[oc_hw_index] = 0;
       }
-      oc_sum += oc_buf[oc_index];
-      if (oc_sum > HW_OC_TIME/2)
+      oc_hw_sum += oc_hw_buf[oc_hw_index];
+      if (oc_hw_sum > HW_OC_TIME/2)
       {
         Enter_ERROR_State(ERROR_HW_OC);
       }
     }
-    oc_index++;
-    if(oc_index == HW_OC_TIME)
+    oc_hw_index++;
+    if(oc_hw_index == HW_OC_TIME)
     {
-      oc_index = 0;
+      oc_hw_index = 0;
     }
-
-    #ifdef RMSOCP
-    //Moving RMS for phase currents
-    for (size_t i = 0; i < 3; i++)
-    {
-      RMS_sum[i]-=(RMS_buf[i][indexRMS]*RMS_buf[i][indexRMS]);
-    }    
-    RMS_buf[0][indexRMS] = IU_100;
-    RMS_buf[1][indexRMS] = IV_100;
-    RMS_buf[2][indexRMS] = IW_100;
-    for (size_t i = 0; i < 3; i++)
-    {
-      RMS_sum[i]+=(RMS_buf[i][indexRMS]*RMS_buf[i][indexRMS]);
-    }
-    indexRMS++;
-    if(indexRMS==10000)
-    {
-      indexRMS = 0;
-    }
-    for (size_t i = 0; i < 3; i++)
-    {
-      if(RMS_sum[i]/10000 > MOVRMSOCP)
-      {
-        Enter_ERROR_State(ERROR_RMS_OC);
-      }
-    }
-    #endif
 
     #ifdef CAN_OT_FAULT
     //CAN fault detect
@@ -1148,8 +1068,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
   }
   if(GPIO_PIN == GPIO_PIN_5)
   {
-    // f_write(&MyFile,write_buffer,sizeof(write_buffer),&written);
-    f_sync(&MyFile);
+    // f_write(&SD_File,write_buffer,sizeof(write_buffer),&written);
+    f_sync(&SD_File);
     while (1)
     {
       /* code */
@@ -1183,20 +1103,20 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
             inverter_state = STATE_RUNNING;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
-            percent_torque_requested = 0;
+            percent_trq_request = 0;
             enable_hw_oc = 1;
             for (size_t i = 0; i < HW_OC_TIME; i++)
             {
-              oc_buf[i] = 0;
+              oc_hw_buf[i] = 0;
             }
-            oc_sum = 0;
-            oc_index = 0;
+            oc_hw_sum = 0;
+            oc_hw_index = 0;
 
-            soft_oc_sum = 0;
-            soft_oc_index = 0;
+            oc_sw_sum = 0;
+            oc_sw_index = 0;
             for (size_t i = 0; i < SOFT_OC_TIME; i++)
             {
-              soft_oc_buf[i] = 0;
+              oc_sw_buf[i] = 0;
             }
 
             enc_sum = 0;
@@ -1213,7 +1133,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
           {
             inverter_state = STATE_READY;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
-            percent_torque_requested = 0;
+            percent_trq_request = 0;
             enable_hw_oc = 0;
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
           }
@@ -1230,7 +1150,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
           error_state = ERROR_NONE;
         }
         torque_command = RxData1[2] | RxData1[3] << 8;
-        percent_torque_requested = (float)torque_command/1000;
+        percent_trq_request = (float)torque_command/1000;
         CAN_Timer = 0;
       }      
     }
@@ -1454,11 +1374,6 @@ void Enter_ERROR_State(INV_Errortypedef error)
   // LowPassFilter_reset(&filter_RPM);
 }
 
-float MCU_MapValue(uint16_t in_value, float in_min, float in_max, float out_min, float out_max)
-{
-  return (float)(in_value - in_min) / (in_max - in_min) * (out_max - out_min) + out_min;
-}
- 
 float MCU_TemperatureCalculate(uint16_t ts_data)
 {
  
