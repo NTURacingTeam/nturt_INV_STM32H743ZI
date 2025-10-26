@@ -71,6 +71,11 @@ NTURT_INV_TypeDef nih = { // nturt_inv_handle
     .enc_index = 0,
     .enc_sum = 0,
     .enc_buf = {0},
+    .pole_pairs = 1,
+    .enc_dir = 1,
+    .zero_electric_angle = ZERO_ELECTRIC_ANGLE,
+    .shaft_angle = 0.0f,
+    .period = CCR,
   },
   .SIC_T = {
     .adc_to_SIC_T_lut = {-750,-696,-608,-553,-512,-479,-452,-428,-407,-388,-370,-355,-340,-326,-314,-301,-290,-279,-269,-259,-250,-241,-232,-224,-216,-208,-200,-193,-186,-179,-172,-166,-160,-153,-147,-142,-136,-130,-125,-119,-114,-109,-104,-99,-94,-89,-84,-80,-75,-71,-66,-62,-58,-53,-49,-45,-41,-37,-33,-29,-26,-22,-18,-14,-11,-7,-4,0,2,6,9,13,16,19,22,26,29,32,35,38,41,44,47,50,53,56,59,62,65,68,71,73,76,79,82,84,87,90,92,95,98,100,103,105,108,110,113,115,118,120,123,125,128,130,132,135,137,139,142,144,146,149,151,153,155,158,160,162,164,167,169,171,173,175,177,179,182,184,186,188,190,192,194,196,198,200,202,204,206,208,210,212,214,216,218,220,222,224,226,228,230,231,233,235,237,239,241,243,245,246,248,250,252,254,256,257,259,261,263,265,266,268,270,272,273,275,277,279,280,282,284,286,287,289,291,292,294,296,297,299,301,302,304,306,307,309,311,312,314,316,317,319,321,322,324,325,327,329,330,332,333,335,337,338,340,341,343,345,346,348,349,351,352,354,355,357,359,360,362,363,365,366,368,369,371,372,374,375,377,378,380,381,383,384,386,387,389,390,392,393,395,396,398,399,401,402,404,405,407,408,409,411,412,414,415,417,418,420,421,422,424,425,427,428,430,431,432,434,435,437,438,440,441,442,444,445,447,448,449,451,452,454,455,456,458,459,461,462,463,465,466,468,469,470,472,473,474,476,477,479,480,481,483,484,485,487,488,490,491,492,494,495,496,498,499,501,502,503,505,506,507,509,510,511,513,514,515,517,518,519,521,522,523,525,526,528,529,530,532,533,534,536,537,538,540,541,542,544,545,546,548,549,550,552,553,554,556,557,558,560,561,562,564,565,566,568,569,570,572,573,574,576,577,578,580,581,582,583,585,586,587,589,590,591,593,594,595,597,598,599,601,602,603,605,606,607,609,610,611,613,614,615,617,618,619,621,622,623,625,626,627,629,630,631,633,634,635,636,638,639,640,642,643,644,646,647,648,650,651,652,654,655,656,658,659,660,662,663,664,666,667,668,670,671,672,674,675,677,678,679,681,682,683,685,686,687,689,690,691,693,694,695,697,698,699,701,702,703,705,706,708,709,710,712,713,714,716,717,718,720,721,723,724,725,727,728,729,731,732,733,735,736,738,739,740,742,743,745,746,747,749,750,751,753,754,756,757,758,760,761,763,764,765,767,768,770,771,772,774,775,777,778,780,781,782,784,785,787,788,789,791,792,794,795,797,798,800,801,802,804,805,807,808,810,811,813,814,815,817,818,820,821,823,824,826,827,829,830,832,833,835,836,838,839,840,842,843,845,846,848,849,851,852,854,856,857,859,860,862,863,865,866,868,869,871,872,874,875,877,878,880,882,883,885,886,888,889,891,893,894,896,897,899,900,902,904,905,907,908,910,912,913,915,916,918,920,921,923,925,926,928,929,931,933,934,936,938,939,941,943,944,946,948,949,951,953,954,956,958,959,961,963,965,966,968,970,971,973,975,977,978,980,982,984,985,987,989,991,992,994,996,998,1000,1001,1003,1005,1007,1009,1010,1012,1014,1016,1018,1020,1021,1023,1025,1027,1029,1031,1033,1034,1036,1038,1040,1042,1044,1046,1048,1050,1052,1054,1055,1057,1059,1061,1063,1065,1067,1069,1071,1073,1075,1077,1079,1081,1083,1085,1087,1089,1091,1093,1095,1097,1100,1102,1104,1106,1108,1110,1112,1114,1116,1118,1121,1123,1125,1127,1129,1131,1134,1136,1138,1140,1142,1145,1147,1149,1151,1154,1156,1158,1160,1163,1165,1167,1169,1172,1174,1176,1179,1181,1184,1186,1188,1191,1193,1195,1198,1200,1203,1205,1208,1210,1213,1215,1218,1220,1223,1225,1228,1230,1233,1235,1238,1241,1243,1246,1248,1251,1254,1256,1259,1262,1264,1267,1270,1273,1275,1278,1281,1284,1287,1289,1292,1295,1298,1301,1304,1307,1310,1312,1315,1318,1321,1324,1327,1330,1333,1337,1340,1343,1346,1349,1352,1355,1358,1362,1365,1368,1371,1375,1378,1381,1385,1388,1391,1395,1398,1402,1405,1409,1412,1416,1419,1423,1426,1430,1434,1437,1441,1445,1448,1452,1456,1460,1464,1468,1471,1475,1479,1483,1487,1491,1496,1500,1504,1508,1512,1516,1521,1525,1529,1534,1538,1542,1547,1551,1556,1561,1565,1570,1575,1579,1584,1589,1594,1599,1604,1609,1614,1619,1624,1629,1635,1640,1645,1651,1656,1662,1667,1673,1678,1684,1690,1696,1702,1708,1714,1720,1726,1733,1739,1745,1752,1758,1765,1772,1779,1785,1792,1800,1807,1814,1821,1829,1836,1844,1852,1860,1868,1876,1884,1892,1901,1909,1918,1927,1936,1945,1954,1964,1973,1983,1993,2003,2014,2024,2035,2046,2057,2068,2080,2091,2103,2116,2128,2141,2154,2168,2181,2195,2210,2224,2239,2255,2271,2287,2304,2321,2338,2356,2375,2394,2414,2435,2456,2478,2501,2524,2549,2574,2600,2628,2657,2686,2718,2750,2785,2821,2859,2899,2942,2987,3035,3087,3142,3202,3266,3336,3412,3497,3590,3695,3814,3951,4111,4301,4534,4830,5227,5804,6778,9092},
@@ -81,7 +86,8 @@ NTURT_INV_TypeDef nih = { // nturt_inv_handle
   },
   .Mot_T = {
     .adc_to_Mot_T_lut = {0},
-    .T = 0
+    .T = 0,
+    .cal_par_I = MOT_CURR
   },
   .MCU_T = {
     .cal_par_1 = 0.0f,
@@ -90,7 +96,11 @@ NTURT_INV_TypeDef nih = { // nturt_inv_handle
     .adc_to_MCU_T_lut = {0}
   },
   .inv_state = STATE_INIT,
-  .err_state = ERROR_NONE
+  .err_state = ERROR_NONE,
+  .DCbus = {
+    .report_DCV = 0,
+    .report_DCA = 0
+  }
 };
 
 // for uart debug, not used currently
@@ -136,18 +146,10 @@ uint16_t oc_sw_index = 0;
 uint16_t oc_sw_sum = 0;
 
 // DC voltage reading
-uint16_t report_DCV;
+float voltage_power_supply = 440;
 
 /// FOC and motor control variables
 float open_loop_timestamp = 0;
-float zero_electric_angle = ZERO_ELECTRIC_ANGLE;
-float shaft_angle = 0;
-float voltage_limit = 440;
-float voltage_power_supply = 440;
-int period = CCR; // period for the PWM
-int enc_dir = 1; // 1 for normal encoder mounting direction, -1 for reverse
-int pole_pairs = 1; // motor pole pairs / encoder pole pairs
-float angle_now; // rad
 const float phase_amp_per_LSB = -0.1031436f;   // phase_amp_per_LSB = 3.3/15.626e-3/adc1_range
 float filt_RPM;
 float filt_Iq;
@@ -183,7 +185,6 @@ float prev_percent_trq_request = 0.0f;
 float abs_prev_percent = 0.0f;
 uint16_t current_offset[4];
 float current_phase[3];
-float Mot_Curr = MOT_CURR;
 const float DCVPLSB = 0.00897;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
 float max_ramp = 1/FREQ/RAMP_TIME_DERATE;
@@ -210,7 +211,6 @@ FDCAN_TxHeaderTypeDef PerameterHeader = { .Identifier = CAN_ID_PERAM+MOT_ID,.IdT
                                           .DataLength = FDCAN_DLC_BYTES_5,.ErrorStateIndicator = FDCAN_ESI_ACTIVE,.BitRateSwitch = FDCAN_BRS_OFF,
                                           .FDFormat = FDCAN_CLASSIC_CAN,.TxEventFifoControl = FDCAN_STORE_TX_EVENTS,.MessageMarker = 0x05};
 FDCAN_RxHeaderTypeDef RxHeader1;
-// uint32_t can_txbuf_num = 0x1u;
 int isSent = 1;
 uint16_t control;
 int CAN_Timer = 0;
@@ -268,16 +268,17 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  nturt_inv_init_1(&nih);
   volatile FRESULT res;                                 /* FatFs function common result code */
 	uint32_t byteswritten;                     /* File write/read counts */
 	// uint8_t wtext[] = "This is STM32 working with FatFs\n"; /* File write buffer */
-  pid_controller_current_Ia.limit = voltage_limit;
-  pid_controller_current_Id.limit = voltage_limit;
-  pid_controller_current_Iq.limit = voltage_limit;
-  pid_controller_current_OCP.limit = voltage_limit;
+  pid_controller_current_Ia.limit = nih.PID.V_max;
+  pid_controller_current_Id.limit = nih.PID.V_max;
+  pid_controller_current_Iq.limit = nih.PID.V_max;
+  pid_controller_current_OCP.limit = nih.PID.V_max;
   // uint8_t wlooptext[] = "This is STM32 working with FatFs in main loop\n"; /* File write buffer */
   // SD_log_buf[0][0].LGSTATE = 0;
-  for (size_t i = 0; i < 1024; i++) nih.Mot_T.adc_to_Mot_T_lut[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+  for (size_t i = 0; i < 1024; i++) nih.Mot_T.adc_to_Mot_T_lut[i] = (int16_t)10*((float)(1650-(3300*i/1024))/nih.Mot_T.cal_par_I/3.795-1000/3.795);
   
   /* USER CODE END 1 */
 
@@ -328,26 +329,9 @@ int main(void)
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_SET);
-  // HAL_GPIO_WritePin(LED_D12_GPIO_Port,LED_D12_Pin,GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_TIM_GPIO_Port,LED_TIM_Pin,GPIO_PIN_RESET);
 
-  //Get temperature sensor calibration data
-  /* 0x1FF1E820 Calibration ADC value at 30 °C = 0x2fc0, 12224 */
-  nih.MCU_T.cal_par_1 = (float) *(uint16_t*) (TEMPSENSOR_CAL1_ADDR);
-  /* 0x1FF1E840 Calibration ADC value at 110 °C = 0x3cb4, 15540 */
-  nih.MCU_T.cal_par_2 = (float) *(uint16_t*) (TEMPSENSOR_CAL2_ADDR);
 
-  //Generate MCU conversion table
-  for (size_t i = 0; i < 1024; i++)
-  {
-    nih.MCU_T.adc_to_MCU_T_lut[i] = (int16_t) roundf(nturt_inv_MCU_TemperatureCalculate(&nih, i<<6)*10);
-  }
-  
-
+  nturt_inv_init_2(&nih);
   // Calibrate ADC
   HAL_Delay(100);
   HAL_ADCEx_Calibration_Start(&hadc1,ADC_CALIB_OFFSET_LINEARITY,ADC_SINGLE_ENDED);
@@ -355,6 +339,7 @@ int main(void)
   HAL_ADCEx_Calibration_Start(&hadc3,ADC_CALIB_OFFSET_LINEARITY,ADC_SINGLE_ENDED);
   HAL_Delay(100);
 
+  // Start Timers
   HAL_TIM_Base_Start(&htim5);
   HAL_TIM_Base_Start(&htim2);
 
@@ -428,7 +413,7 @@ int main(void)
   setPhaseVoltage(25,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1,0,0,0);
   for (size_t i = 0; i < 2000; i++)
   {
-    Get_Encoder_Angle(DMA_ADC2_arr,&angle_now);
+    nturt_inv_update_encoder_angle_now(DMA_ADC2_arr,&angle_now);
     HAL_Delay(10);
     SCB_InvalidateDCache_by_Addr(DMA_ADC2_arr,sizeof(DMA_ADC2_arr));
     if (i >= 1500)
@@ -440,14 +425,14 @@ int main(void)
   // uint16_t read_raw=read(&hspi1, SPI1_CSn_GPIO_Port,SPI1_CSn_Pin,AS5048A_ANGLE);
   float raw_angle;
   SCB_InvalidateDCache_by_Addr(DMA_ADC2_arr,sizeof(DMA_ADC2_arr));
-  Get_Encoder_Angle(DMA_ADC2_arr,&raw_angle);
+  nturt_inv_update_encoder_angle_now(DMA_ADC2_arr,&raw_angle);
   raw_angle = angle_integrate/500.0f;
   zero_electric_angle=_electricalAngle(raw_angle,pole_pairs);
   setPhaseVoltage(0,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1,0,0,0);
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   #endif
 
-  UART_TX_Send(&huart1,"zero_electric_angle: %i \n",(int) floor(zero_electric_angle/M_PI*180));
+  UART_TX_Send(&huart1,"zero_electric_angle: %i \n",(int) floor(nih.angle_encoder.zero_electric_angle/M_PI*180));
   
   Config_Fdcan1();
 
@@ -748,10 +733,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     CAN_Timer++;
     
     float speed_rad, angle_pll;
-    Get_Encoder_Angle(ADC2_arr,&angle_now,&speed_rad,&angle_pll);
+    nturt_inv_update_encoder_angle_now(&nih, ADC2_arr,&speed_rad,&angle_pll);
     int8_t enc_err = 0;
     // angle_now = angle_pll;
-    if(angle_now != angle_now)
+    if(nih.angle_encoder.angle_now != nih.angle_encoder.angle_now)
     {
       enc_err = 1;
     }
@@ -780,7 +765,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       }    
     }
 
-    angle_now = _normalizeAngle(angle_now);
+    nih.angle_encoder.angle_now = _normalizeAngle(nih.angle_encoder.angle_now);
 
     #ifdef OPEN_LOOP_SPEED
     angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * 4);
@@ -789,12 +774,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     #endif
     
     voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
-    voltage_limit = voltage_power_supply;
+    nih.PID.V_max = voltage_power_supply;
     // float filtered_angle = LowPassFilter_operator(angle_now,&filter);
     
     float angular_vel = 0.0f;
-    float raw_RPM = (float)enc_dir*angular_vel/4/2/M_PI*60;
-    filt_RPM = LowPassFilter_operator((float)enc_dir*angular_vel/4/2/M_PI*60,&filter_RPM);
+    float raw_RPM = (float)nih.angle_encoder.enc_dir * angular_vel/4/2/M_PI*60;
+    filt_RPM = LowPassFilter_operator((float)nih.angle_encoder.enc_dir * angular_vel/4/2/M_PI*60,&filter_RPM);
     // float target_torque = max_torque*prev_percent_trq_request;
     float max_derate = _constrain((float)DERATE_END/DERATE_START-(float)abs(filt_RPM)/DERATE_START,0.0f,1.0f);
     // prev_percent_trq_request = _constrain(prev_percent_trq_request,-max_derate,max_derate);
@@ -829,16 +814,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       oc_sw_index = 0;
     }
 
-    pid_controller_current_Ia.limit = voltage_limit;
-    pid_controller_current_Id.limit = voltage_limit;
-    pid_controller_current_Iq.limit = voltage_limit;
-    pid_controller_current_OCP.limit = voltage_limit;
-    pid_controller_current_Iabc[0].limit = voltage_limit;
-    pid_controller_current_Iabc[1].limit = voltage_limit;
-    pid_controller_current_Iabc[2].limit = voltage_limit;
+    pid_controller_current_Ia.limit = nih.PID.V_max;
+    pid_controller_current_Id.limit = nih.PID.V_max;
+    pid_controller_current_Iq.limit = nih.PID.V_max;
+    pid_controller_current_OCP.limit = nih.PID.V_max;
+    pid_controller_current_Iabc[0].limit = nih.PID.V_max;
+    pid_controller_current_Iabc[1].limit = nih.PID.V_max;
+    pid_controller_current_Iabc[2].limit = nih.PID.V_max;
     
     float Id,Iq;
-    cal_Idq(current_phase, _electricalAngle(angle_now, pole_pairs), &Id, &Iq);
+    cal_Idq(current_phase, _electricalAngle(nih.angle_encoder.angle_now, nih.angle_encoder.pole_pairs), &Id, &Iq);
     filt_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
     filt_Id=LowPassFilter_operator(Id,&filter_current_Id);
     // filt_Iq = Iq;
@@ -882,7 +867,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     
     // setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
     // setPhaseVoltage(percent_trq_request*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
-    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1,-Iabc_controller_output[0],-Iabc_controller_output[1],-Iabc_controller_output[2]);
+    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(nih.angle_encoder.angle_now, nih.angle_encoder.pole_pairs),TIM1,-Iabc_controller_output[0],-Iabc_controller_output[1],-Iabc_controller_output[2]);
     
 
     if (indexLED == freq/2)
@@ -901,12 +886,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     	indexLED=0;
     }
 
-    report_DCV = (uint16_t) roundf(voltage_power_supply*100);
+    nih.DCbus.report_DCV = (uint16_t) roundf(voltage_power_supply*100);
     int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
     if (indexHeartbeat == freq/10)
     {
       CAN_Send_Temp(ADC3_arr);
-      CAN_Send_State(report_DCV,report_DCA);
+      CAN_Send_State(nih.DCbus.report_DCV,report_DCA);
       CAN_Send_Heartbeat();
       CAN_Send_Perameter();
       // CAN_Send_Heartbeat();
@@ -953,7 +938,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSEC = SD_log_time.Seconds;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGERR = nih.err_state;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSUBSEC = SD_log_subsec;
-    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCV = report_DCV;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCV = nih.DCbus.report_DCV;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCA = report_DCA;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGIU = IU_100;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGIV = IV_100;
@@ -962,7 +947,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVD = (int16_t) roundf(Id_controller_output*10);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSINE = ADC2_arr[0]-ADC2_arr[1];
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGCOS = ADC2_arr[2]-ADC2_arr[3];
-    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGANG = (uint16_t) roundf(angle_now*100*180/M_PI);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGANG = (uint16_t) roundf(nih.angle_encoder.angle_now*100*180/M_PI);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGTCMD = (int16_t) roundf(prev_percent_trq_request*1000);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSTATE = report_status;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVU = TIM1->CCR1;
@@ -1236,7 +1221,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
           break;
 
         case 0x31:
-          zero_electric_angle = val;
+          nih.angle_encoder.zero_electric_angle = val;
           break;
         
         case 0x41:
@@ -1255,10 +1240,10 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
         switch (RxData1[0])
         {
         case 0x21:
-          Mot_Curr = val;
+          nih.Mot_T.cal_par_I = val;
           for (size_t i = 0; i < 1024; i++)
           {
-            nih.Mot_T.adc_to_Mot_T_lut[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
+            nih.Mot_T.adc_to_Mot_T_lut[i] = (int16_t)10*((float)(1650-(3300*i/1024))/nih.Mot_T.cal_par_I/3.795-1000/3.795);
           }
         
         default:
