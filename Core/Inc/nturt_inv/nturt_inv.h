@@ -25,28 +25,23 @@ extern "C" {
 #include "time.h"
 #include "arm_math.h"
 
-
-
-// #include <stdint.h>
-// #include <stdbool.h>
+#include <stdbool.h>
 
 /* Constants */
 #define NTURT_INV_VERSION 1
 
-/* Type definitions */
-// typedef struct {
-// 	uint16_t voltage;
-// 	uint16_t current;
-// 	uint16_t temperature;
-// } nturt_inv_status_t;
 
-/* Function declarations */
-// void nturt_inv_init(void);
-// void nturt_inv_deinit(void);
-// bool nturt_inv_read_status(nturt_inv_status_t *status);
-// void nturt_inv_set_output(uint16_t value);
+typedef struct {
+	/// for main loop run once very two timer interrupt
+	bool nturt_main_run;
+
+}	NTURT_INV_TypeDef;
 
 
+bool nturt_inv_toggle_and_get_run_state(NTURT_INV_TypeDef *handle);
+
+
+int16_t maxint16(int16_t a,int16_t b);
 float MCU_MapValue(uint16_t in_value, float in_min, float in_max, float out_min, float out_max);
 float MCU_TemperatureCalculate(uint16_t ts_data);
 void Enter_ERROR_State(INV_Errortypedef error);
@@ -58,6 +53,7 @@ void CAN_Send_Heartbeat(void);
 void CAN_Send_Perameter(void);
 void set_time (uint8_t hr, uint8_t min, uint8_t sec);
 void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day);
+
 
 
 #ifdef __cplusplus
