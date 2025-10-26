@@ -120,7 +120,7 @@ bool nturt_inv_init_1(NTURT_INV_TypeDef *handle);
 bool nturt_inv_init_2(NTURT_INV_TypeDef *handle);
 
 
-void nturt_inv_update_encoder_angle_now(NTURT_INV_TypeDef *handle, uint16_t* val_arr,float_t *speed_rpm, float_t *rad_pll);
+void nturt_inv_update_encoder_angle_now(NTURT_INV_TypeDef *handle, uint16_t* val_arr, float_t *rad_pll);
 
 
 #ifdef __cplusplus

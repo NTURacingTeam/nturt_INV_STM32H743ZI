@@ -732,8 +732,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexStatus++;
     CAN_Timer++;
     
-    float speed_rad, angle_pll;
-    nturt_inv_update_encoder_angle_now(&nih, ADC2_arr,&speed_rad,&angle_pll);
+    float angle_pll;
+    nturt_inv_update_encoder_angle_now(&nih, ADC2_arr,&angle_pll);
     int8_t enc_err = 0;
     // angle_now = angle_pll;
     if(nih.angle_encoder.angle_now != nih.angle_encoder.angle_now)
@@ -961,7 +961,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCIV = (int16_t) roundf(current_phase_dc[1]*100);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCIW = (int16_t) roundf(current_phase_dc[2]*100);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVA = (int16_t) roundf(angle_pll*10);
-    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVB = (int16_t) roundf(speed_rad*10);
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVB = (int16_t) roundf(0);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGVC = (int16_t) roundf(Iabc_controller_output[2]*10);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGRMSIU = (uint16_t) roundf(-1);
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGRMSIV = (uint16_t) roundf(-1);
