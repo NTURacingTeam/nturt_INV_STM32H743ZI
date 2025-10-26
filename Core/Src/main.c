@@ -99,7 +99,8 @@ NTURT_INV_TypeDef nih = { // nturt_inv_handle
   .err_state = ERROR_NONE,
   .DCbus = {
     .report_DCV = 0,
-    .report_DCA = 0
+    .report_DCA = 0,
+    .voltage_power_supply = 440
   }
 };
 
@@ -144,9 +145,6 @@ uint16_t oc_hw_sum = 0;
 uint8_t oc_sw_buf[SOFT_OC_TIME] = {0};
 uint16_t oc_sw_index = 0;
 uint16_t oc_sw_sum = 0;
-
-// DC voltage reading
-float voltage_power_supply = 440;
 
 /// FOC and motor control variables
 float open_loop_timestamp = 0;
@@ -378,17 +376,11 @@ int main(void)
     }
   }
   
-
   // Init ADC DMA
   HAL_ADC_Start_DMA(&hadc1,(uint32_t*)DMA_ADC1_arr,4);
   HAL_ADC_Start_DMA(&hadc2,(uint32_t*)DMA_ADC2_arr,4);
   HAL_ADC_Start_DMA(&hadc3,(uint32_t*)DMA_ADC3_arr,6);
-  // HAL_MDMA_Start_IT(&hmdma_mdma_channel0_dma1_stream2_tc_0,(uint32_t)tmp_DMA_ADC1_arr,(uint32_t)DMA_ADC1_arr,8,1);
-  // HAL_MDMA_Start_IT(&hmdma_mdma_channel1_dma1_stream1_tc_0,(uint32_t)tmp_DMA_ADC2_arr,(uint32_t)DMA_ADC2_arr,8,1);
-  // HAL_MDMA_Start_IT(&hmdma_mdma_channel2_dma1_stream4_tc_0,(uint32_t)tmp_DMA_ADC3_arr,(uint32_t)DMA_ADC3_arr,12,1);
-  // HAL_ADC_Start_IT(&hadc3);
 
-  // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port, Motor_Enable_Pin, GPIO_PIN_SET);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
@@ -397,7 +389,6 @@ int main(void)
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_3);
   HAL_Delay(1000);
   calibrateOffsets(current_offset,DMA_ADC1_arr);
-  // HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
 
   //Wait for GATE READY Signal
   #ifdef WAIT_GATE_READY
@@ -410,7 +401,8 @@ int main(void)
   #ifdef CAL_ZERO_ANGLE
   float angle_integrate = 0.0f;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
-  setPhaseVoltage(25,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1,0,0,0);
+  nturt_inv_mc_update_all(&nih);
+  nturt_inv_mc_set_phase_volt(&nih.mc, 25,0,nturt_inv_mc_electricalAngle(&nih.mc, M_PI*1.5f,pole_pairs),TIM1,0,0,0);
   for (size_t i = 0; i < 2000; i++)
   {
     nturt_inv_update_encoder_angle_now(DMA_ADC2_arr,&angle_now);
@@ -427,26 +419,23 @@ int main(void)
   SCB_InvalidateDCache_by_Addr(DMA_ADC2_arr,sizeof(DMA_ADC2_arr));
   nturt_inv_update_encoder_angle_now(DMA_ADC2_arr,&raw_angle);
   raw_angle = angle_integrate/500.0f;
-  zero_electric_angle=_electricalAngle(raw_angle,pole_pairs);
-  setPhaseVoltage(0,0,_electricalAngle(M_PI*1.5f,pole_pairs),TIM1,0,0,0);
+  nturt_inv_mc_update_all(&nih);
+  zero_electric_angle=nturt_inv_mc_electricalAngle(&nih.mc, raw_angle,pole_pairs);
+  nturt_inv_mc_set_phase_volt(&nih.mc, 0,0,nturt_inv_mc_electricalAngle(&nih.mc, M_PI*1.5f,pole_pairs),TIM1,0,0,0);
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   #endif
 
+  // send zero angle info via uart
   UART_TX_Send(&huart1,"zero_electric_angle: %i \n",(int) floor(nih.angle_encoder.zero_electric_angle/M_PI*180));
   
   Config_Fdcan1();
-
-  // while (!got_date)
-  // {
-  //   HAL_Delay(10);
-  // }  
 
   //Get DateTime
   HAL_RTC_GetDate(&hrtc,&SD_log_date,RTC_FORMAT_BIN);
   HAL_RTC_GetTime(&hrtc,&SD_log_time,RTC_FORMAT_BIN);  
 
+  // SD log file init
   snprintf(TextFPath, sizeof(TextFPath),FILENAME,(int)SD_log_date.Year+2000,(int)SD_log_date.Month,(int)SD_log_date.Date,(int)SD_log_time.Hours,(int)SD_log_time.Minutes,(int)SD_log_time.Seconds);
-  // snprintf(TextFPath, sizeof(TextFPath),"text.bin");
   res = f_open(&SD_File,TextFPath,FA_CREATE_ALWAYS|FA_WRITE);
   if(res == FR_OK)
   {
@@ -454,6 +443,7 @@ int main(void)
   }
   f_open(&SD_File,TextFPath,FA_OPEN_APPEND|FA_WRITE);
 
+  // state init
   HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
   nih.inv_state = STATE_READY;
   nih.err_state = ERROR_NONE;
@@ -463,7 +453,10 @@ int main(void)
   prev_time = __HAL_TIM_GET_COUNTER(&htim5);
   #endif
 
+  // LED init
   HAL_GPIO_WritePin(LED_SD_GPIO_Port,LED_SD_Pin,GPIO_PIN_SET);
+
+  // timer start
   HAL_TIM_Base_Start_IT(&htim1); 
   HAL_TIM_Base_Start_IT(&htim3);
   prev_sd = __HAL_TIM_GET_COUNTER(&htim2);
@@ -478,9 +471,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // continue;
+
+    // everything related to SD card logging 
     volatile int sd_now = __HAL_TIM_GET_COUNTER(&htim2);
-    // uint32_t whileTest = sd_now;
     if (sd_now - prev_new_file_time >= 3000000)
     {
       f_close(&SD_File);
@@ -656,6 +649,11 @@ void PeriphCommonClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/////////////////////////
+//// main contol loop ///
+/////////////////////////
+// main motor control loop, triggered by timer interrupt
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   // Check which version of the timer triggered this callback and toggle LED
@@ -765,16 +763,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       }    
     }
 
-    nih.angle_encoder.angle_now = _normalizeAngle(nih.angle_encoder.angle_now);
-
-    #ifdef OPEN_LOOP_SPEED
-    angle_now = _normalizeAngle(last_angle + open_loop_rpm_var/ 60.0f / freq * 2 * M_PI * 4);
-    last_angle = angle_now;
-    // setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(angle_now, pole_pairs),TIM1);    
-    #endif
+    nih.angle_encoder.angle_now = nturt_inv_mc_normalize_angle(nih.angle_encoder.angle_now);
     
-    voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
-    nih.PID.V_max = voltage_power_supply;
+    // update voltage power supply
+    nih.DCbus.voltage_power_supply = (float)ADC3_arr[0]*DCVPLSB;
+    nih.PID.V_max = nih.DCbus.voltage_power_supply;
     // float filtered_angle = LowPassFilter_operator(angle_now,&filter);
     
     float angular_vel = 0.0f;
@@ -823,7 +816,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     pid_controller_current_Iabc[2].limit = nih.PID.V_max;
     
     float Id,Iq;
-    cal_Idq(current_phase, _electricalAngle(nih.angle_encoder.angle_now, nih.angle_encoder.pole_pairs), &Id, &Iq);
+    nturt_inv_mc_update_all(&nih);
+    nturt_inv_mc_cal_Idq(current_phase, nturt_inv_mc_electricalAngle(&nih.mc, nih.angle_encoder.angle_now, nih.angle_encoder.pole_pairs), &Id, &Iq);
     filt_Iq=LowPassFilter_operator(Iq,&filter_current_Iq);
     filt_Id=LowPassFilter_operator(Id,&filter_current_Id);
     // filt_Iq = Iq;
@@ -855,21 +849,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       } 
     }
     
-    float IqOC_controller_output;
-    if(Iq_controller_output > 0)
-    {
-      IqOC_controller_output = _constrain(PID_operator(SOFTOCP-Ia,&pid_controller_current_OCP),-Iq_controller_output,0);
-    }
-    else
-    {
-      IqOC_controller_output = _constrain(PID_operator(-SOFTOCP-Ia,&pid_controller_current_OCP),0,-Iq_controller_output);
-    }
+    /////////////////////
+    /// set PWM /////////
+    /////////////////////
+    nturt_inv_mc_update_all(&nih);
+    nturt_inv_mc_set_phase_volt(&nih.mc, Iq_controller_output, Id_controller_output, nturt_inv_mc_electricalAngle(&nih.mc, nih.angle_encoder.angle_now, nih.angle_encoder.pole_pairs),TIM1,-Iabc_controller_output[0],-Iabc_controller_output[1],-Iabc_controller_output[2]);
     
-    // setPhaseVoltage(_constrain(Iq_controller_output+IqOC_controller_output,-voltage_power_supply/2,voltage_power_supply/2),  _constrain(Id_controller_output,-voltage_power_supply/2,voltage_power_supply/2), _electricalAngle(angle_now, pole_pairs),TIM1);
-    // setPhaseVoltage(percent_trq_request*100, 0, _electricalAngle(angle_now, pole_pairs),TIM1);
-    setPhaseVoltage(Iq_controller_output, Id_controller_output, _electricalAngle(nih.angle_encoder.angle_now, nih.angle_encoder.pole_pairs),TIM1,-Iabc_controller_output[0],-Iabc_controller_output[1],-Iabc_controller_output[2]);
-    
-
+    ////////////////
+    /// LED ////////
+    ////////////////
     if (indexLED == freq/2)
     {
     	if(nih.inv_state == STATE_READY)
@@ -880,23 +868,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       {
         HAL_GPIO_TogglePin(LED_ERR_GPIO_Port,LED_ERR_Pin);
       }
-      
-    	// HAL_GPIO_TogglePin(LED_ERR_GPIO_Port, LED_ERR_Pin);
-      // UART_TX_Send(&huart1,"ping");
     	indexLED=0;
     }
 
-    nih.DCbus.report_DCV = (uint16_t) roundf(voltage_power_supply*100);
+    ///////////////////////////////
+    /// updtae CAN report data ////
+    ///////////////////////////////
+    nih.DCbus.report_DCV = (uint16_t) roundf(nih.DCbus.voltage_power_supply*100);
     int16_t report_DCA = (int16_t) roundf((float)(ADC1_arr[3]-current_offset[3])*DCAPLSB*100);
+    
+    /////////////////////////
+    /// send CAN (100ms) ////
+    /////////////////////////
+    
     if (indexHeartbeat == freq/10)
     {
       CAN_Send_Temp(ADC3_arr);
       CAN_Send_State(nih.DCbus.report_DCV,report_DCA);
       CAN_Send_Heartbeat();
       CAN_Send_Perameter();
-      // CAN_Send_Heartbeat();
       indexHeartbeat = 0;
     }
+
+
+    ////////////////
+    /// Logging ////
+    ////////////////
 
     uint16_t report_status = 0;
     if(nih.inv_state == STATE_READY) 
@@ -922,7 +919,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       indexStatus = 0;
     }
 
-    //Logging
+    ////////////////
+    /// Logging ////
+    ////////////////
+
     int16_t IU_100 = (int16_t)roundf(current_phase[0]*100);
     int16_t IV_100 = (int16_t)roundf(current_phase[1]*100);
     int16_t IW_100 = (int16_t)roundf(current_phase[2]*100);
@@ -972,6 +972,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SD_log_subsec++;
     SD_wr_log_index++;
 
+    ////////////////////////////////
+    ////// OC,OT protection ////////
+    ////////////////////////////////
     if(nih.inv_state == STATE_RUNNING)
     {
       oc_hw_sum -= oc_hw_buf[oc_hw_index];
@@ -1006,6 +1009,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
     #endif
 
+    ////////////////
+    /// TIMING ////
+    ////////////////
+
     #ifdef TIMING
     loop_time = __HAL_TIM_GET_COUNTER(&htim5)-tick_start;
     if (loop_time > max_time)
@@ -1033,10 +1040,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     indexTimer++;
     #endif
 
+    ////////////////
+    /// LED ////
+    ////////////////
+
     HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
   }  
 }
 
+///////////////////////
+//// external error ///
+///////////////////////
+// external error and fault handling
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
 {
   if(GPIO_PIN == GPIO_PIN_3)
@@ -1052,7 +1067,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
   }
   if(GPIO_PIN == GPIO_PIN_5)
   {
-    // f_write(&SD_File,write_buffer,sizeof(write_buffer),&written);
     f_sync(&SD_File);
     while (1)
     {
@@ -1066,6 +1080,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	isSent = 1;
 }
 
+
+////////////////
+//// CAN RX  ///
+////////////////
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
   if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE)!=0)
@@ -1082,7 +1100,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
         if(nih.inv_state != STATE_ERROR)
         {
           // enable
-          if(control & CTRL_ENABLE && voltage_power_supply >= 20 && nih.inv_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) == GPIO_PIN_SET )
+          if(control & CTRL_ENABLE && nih.DCbus.voltage_power_supply >= 20 && nih.inv_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) == GPIO_PIN_SET )
           {
             nih.inv_state = STATE_RUNNING;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
@@ -1254,6 +1272,9 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
   }
 }
 
+//////////////////
+//// CAN ERROR ///
+//////////////////
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs)
 {
   if(hfdcan->Instance == FDCAN1)
@@ -1264,6 +1285,9 @@ void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorSt
   }
 }
 
+/////////////////
+//// CAN INIT ///
+/////////////////
 void Config_Fdcan1(void)
 {
   FDCAN_FilterTypeDef CAN1RxFilterConfig;
@@ -1340,6 +1364,10 @@ void Config_Fdcan1(void)
   HAL_FDCAN_Start(&hfdcan1);
 }
 
+/////////////////////////
+//// INV ERROR handler ///
+/////////////////////////
+
 void Enter_ERROR_State(INV_Errortypedef error)
 {
   nih.inv_state = STATE_ERROR;
@@ -1403,35 +1431,6 @@ void CAN_Send_Temp(uint16_t ADC_arr[6])
   TempData[4] = nih.Mot_T.T;
   TempData[5] = nih.Mot_T.T >> 8;
   CAN1_SetMsg(&TempHeader,TempData);
-}
-
-void set_time (uint8_t hr, uint8_t min, uint8_t sec)
-{
-	RTC_TimeTypeDef sTime = {0};
-	sTime.Hours = hr;
-	sTime.Minutes = min;
-	sTime.Seconds = sec;
-	sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-	sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-	if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
-	{
-		Error_Handler();
-	}
-}
-
-void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day)  // monday = 1
-{
-	RTC_DateTypeDef sDate = {0};
-	sDate.WeekDay = day;
-	sDate.Month = month;
-	sDate.Date = date;
-	sDate.Year = year;
-	if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
-	{
-		Error_Handler();
-	}
-
-	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x2345);  // backup register
 }
 
 void CAN_Send_Heartbeat(void)
@@ -1511,6 +1510,37 @@ void CAN_Send_Perameter(void)
     PeramData[i+1] = bytes[i];
   }  
   CAN1_SetMsg(&PerameterHeader,PeramData);
+}
+
+// set time to STime for SD logging
+void set_time (uint8_t hr, uint8_t min, uint8_t sec)
+{
+	RTC_TimeTypeDef sTime = {0};
+	sTime.Hours = hr;
+	sTime.Minutes = min;
+	sTime.Seconds = sec;
+	sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+	sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+	if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK)
+	{
+		Error_Handler();
+	}
+}
+
+// date to SDate for SD logging
+void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day)  // monday = 1
+{
+	RTC_DateTypeDef sDate = {0};
+	sDate.WeekDay = day;
+	sDate.Month = month;
+	sDate.Date = date;
+	sDate.Year = year;
+	if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) != HAL_OK)
+	{
+		Error_Handler();
+	}
+
+	HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR1, 0x2345);  // backup register
 }
 
 /* USER CODE END 4 */

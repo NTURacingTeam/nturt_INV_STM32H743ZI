@@ -18,13 +18,19 @@
 #define _1_SQRT3 0.57735026919f
 #define _2_SQRT3 1.15470053838f
 
-float _normalizeAngle(float angle);
-float _electricalAngle(float shaft_angle, int pole_pairs);
-void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE);
-void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,float Va,float Vb,float Vc);
-void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE);
-float cal_angular_vel(float angle_now,float* speed_RPM);
-void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq);
+typedef struct {
+  float zero_electric_angle; 
+  int pole_pairs; // motor pole pairs / encoder pole pairs
+  int enc_dir; // 1 for normal encoder mounting direction, -1 for reverse
+  float voltage_power_supply; // should update every time
+  int period; // period for the PWM 
+} MotorControlConfig_TypeDef;
+
+float nturt_inv_mc_normalize_angle(float angle);
+float nturt_inv_mc_electricalAngle(MotorControlConfig_TypeDef* handle, float shaft_angle, int pole_pairs);
+void nturt_inv_mc_setPwm(MotorControlConfig_TypeDef* handle, float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE);
+void nturt_inv_mc_set_phase_volt(MotorControlConfig_TypeDef* handle, float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,float Va,float Vb,float Vc);
+void nturt_inv_mc_cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq);
 
 
 #endif /* INC_MOTOR_CONTROL_H_ */

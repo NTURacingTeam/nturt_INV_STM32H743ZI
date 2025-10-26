@@ -12,77 +12,32 @@
 #endif
 #define _HIGH_IMPEDANCE 0
 
-extern float zero_electric_angle;
-extern int pole_pairs;
-extern float shaft_angle;
-extern int enc_dir;
-extern float voltage_limit;
-extern float voltage_power_supply;
-extern int period;
-// extern float angle_prev;
-extern float Ts;
-
-int trap_120_map[6][3] = {
-  {_HIGH_IMPEDANCE,1,-1},
-  {-1,1,_HIGH_IMPEDANCE},
-  {-1,_HIGH_IMPEDANCE,1},
-  {_HIGH_IMPEDANCE,-1,1},
-  {1,-1,_HIGH_IMPEDANCE},
-  {1,_HIGH_IMPEDANCE,-1} 
-};
-
-
-float _normalizeAngle(float angle){
-  float a = fmod(angle, 2*M_PI);   //取余运算可以用于归一化，列出特殊值例子算便知
+float nturt_inv_mc_normalize_angle(float angle){
+  float a = fmod(angle, 2*M_PI);  
   return a >= 0 ? a : (a + 2*M_PI);
-  //三目运算符。格式：condition ? expr1 : expr2
-  //其中，condition 是要求值的条件表达式，如果条件成立，则返回 expr1 的值，否则返回 expr2 的值。
-  //可以将三目运算符视为 if-else 语句的简化形式。
-  //fmod 函数的余数的符号与除数相同。因此，当 angle 的值为负数时，余数的符号将与 _2M_PI 的符号相反。
-  //也就是说，如果 angle 的值小于 0 且 _2M_PI 的值为正数，则 fmod(angle, _2M_PI) 的余数将为负数。
-  //例如，当 angle 的值为 -M_PI/2，_2M_PI 的值为 2M_PI 时，fmod(angle, _2M_PI) 将返回一个负数。
-  //在这种情况下，可以通过将负数的余数加上 _2M_PI 来将角度归一化到 [0, 2M_PI] 的范围内，以确保角度的值始终为正数。
 }
 
-float _electricalAngle(float shaft_angle, int pole_pairs) {
-  return _normalizeAngle(((float)(enc_dir * pole_pairs)*shaft_angle)-zero_electric_angle);
+float nturt_inv_mc_electricalAngle(MotorControlConfig_TypeDef* handle, float shaft_angle, int pole_pairs) {
+  return nturt_inv_mc_normalize_angle(((float)(handle->enc_dir * pole_pairs)*shaft_angle)-handle->zero_electric_angle);
 }
 
-void setPwm(float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
-//	// 限制上限
-	// Ua = _constrain(Ua, 0.0f, voltage_limit);
-	// Ub = _constrain(Ub, 0.0f, voltage_limit);
-	// Uc = _constrain(Uc, 0.0f, voltage_limit);
-	// 计算占空比
-	// 限制占空比从0到1
-	// float dc_a = _constrain(Ua / voltage_power_supply, 0.0f , 1.0f );
-	// float dc_b = _constrain(Ub / voltage_power_supply, 0.0f , 1.0f );
-	// float dc_c = _constrain(Uc / voltage_power_supply, 0.0f , 1.0f );
+void nturt_inv_mc_setPwm(MotorControlConfig_TypeDef* handle, float Ua, float Ub, float Uc, TIM_TypeDef * TIM_BASE) {
 
   float dc_a = _constrain(Ua , 0.0f , 1.0f );
 	float dc_b = _constrain(Ub , 0.0f , 1.0f );
 	float dc_c = _constrain(Uc , 0.0f , 1.0f );
 
 	//写入PWM到PWM 0 1 2 通道
-	TIM_BASE->CCR1 = (uint32_t) roundf(dc_a*period);
-	TIM_BASE->CCR2 = (uint32_t) roundf(dc_b*period);
-	TIM_BASE->CCR3 = (uint32_t) roundf(dc_c*period);
+	TIM_BASE->CCR1 = (uint32_t) roundf(dc_a*handle->period);
+	TIM_BASE->CCR2 = (uint32_t) roundf(dc_b*handle->period);
+	TIM_BASE->CCR3 = (uint32_t) roundf(dc_c*handle->period);
 
 }
 
-void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,float Va,float Vb,float Vc) {
-  angle_el = _normalizeAngle(angle_el);
+// should update voltage_power_supply every time before calling this function
+void nturt_inv_mc_set_phase_volt(MotorControlConfig_TypeDef* handle, float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,float Va,float Vb,float Vc) {
+  angle_el = nturt_inv_mc_normalize_angle(angle_el);
   
-  // #ifdef VQ_LEQ_0
-  // if (Uq <0 ){
-	//   angle_el+=M_PI;
-	//   Uq=fabsf(Uq);
-  // }
-  // angle_el =  _normalizeAngle (angle_el);
-  // #endif
-
-  // int sector = floor(angle_el / M_PI*3) + 1;
-  // calculate the duty cycles
   #ifdef MIDDLE_CLAMP
   float sa;
   float ca;
@@ -95,9 +50,9 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
   Ua -= Va;
   Ub -= Vb;
   Uc -= Vc;
-  float Da = _constrain((Ua / voltage_power_supply+1)/2,0.0f,1.0f);
-  float Db = _constrain((Ub / voltage_power_supply+1)/2,0.0f,1.0f);
-  float Dc = _constrain((Uc / voltage_power_supply+1)/2,0.0f,1.0f);
+  float Da = _constrain((Ua / handle->voltage_power_supply+1)/2,0.0f,1.0f);
+  float Db = _constrain((Ub / handle->voltage_power_supply+1)/2,0.0f,1.0f);
+  float Dc = _constrain((Uc / handle->voltage_power_supply+1)/2,0.0f,1.0f);
   #ifdef SVPWM
   float center = 0.5f;
   // discussed here: https://community.simplefoc.com/t/embedded-world-2023-stm32-cordic-co-processor/3107/165?u=candas1
@@ -111,11 +66,11 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
   Dc += center;
   #endif
   #else
-  angle_el =  _normalizeAngle (angle_el+M_PI/2);
+  angle_el =  nturt_inv_mc_normalize_angle (angle_el+M_PI/2);
   int sector = floor(angle_el / M_PI*3) + 1;
   // calculate the duty cycles
-  float T1 = _SQRT3 * sin(sector * M_PI/3 - angle_el) * Uq / voltage_power_supply;
-  float T2 = _SQRT3 * sin(angle_el - (sector - 1.0) * M_PI/3) * Uq / voltage_power_supply;
+  float T1 = _SQRT3 * sin(sector * M_PI/3 - angle_el) * Uq / handle->voltage_power_supply;
+  float T2 = _SQRT3 * sin(angle_el - (sector - 1.0) * M_PI/3) * Uq / handle->voltage_power_supply;
   float T0 = 1 - T1 - T2;
 
 
@@ -158,69 +113,19 @@ void setPhaseVoltage(float Uq,float Ud, float angle_el, TIM_TypeDef * TIM_BASE,f
       Tc = 0;
   }
   // 克拉克逆变换
-  float Ua = Ta * voltage_power_supply;
-  float Ub = Tb * voltage_power_supply;
-  float Uc = Tc * voltage_power_supply;
+  float Ua = Ta * handle->voltage_power_supply;
+  float Ub = Tb * handle->voltage_power_supply;
+  float Uc = Tc * handle->voltage_power_supply;
   #endif
-  // Ua = Da * voltage_power_supply;
-  // Ub = Db * voltage_power_supply;
-  // Uc = Dc * voltage_power_supply;
-  setPwm(Da,Db,Dc,TIM_BASE);
+  // Ua = Da * handle->voltage_power_supply;
+  // Ub = Db * handle->voltage_power_supply;
+  // Uc = Dc * handle->voltage_power_supply;
+  nturt_inv_mc_setPwm(handle, Da,Db,Dc,TIM_BASE);
 }
 
-void setSixStepPhaseVoltage(float Uq, float angle_el, TIM_TypeDef* TIM_BASE)
+void nturt_inv_mc_cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
 {
-  float center;
-  int sector;
-  float Ua,Ub,Uc;
-  sector = 6 * (_normalizeAngle(angle_el + (M_PI/6) ) / (2*M_PI)); // adding PI/6 to align with other modes
-  // centering the voltages around either
-  // modulation_centered == true > driver.voltage_limit/2
-  // modulation_centered == false > or Adaptable centering, all phases drawn to 0 when Uq=0
-  center = voltage_power_supply/2;
-  if(trap_120_map[sector][0]  == _HIGH_IMPEDANCE){
-    Ua = center;
-    Ub = trap_120_map[sector][1] * Uq + center;
-    Uc = trap_120_map[sector][2] * Uq + center;
-  }else if(trap_120_map[sector][1]  == _HIGH_IMPEDANCE){
-    Ua = trap_120_map[sector][0] * Uq + center;
-    Ub = center;
-    Uc = trap_120_map[sector][2] * Uq + center;
-  }else{
-    Ua = trap_120_map[sector][0] * Uq + center;
-    Ub = trap_120_map[sector][1] * Uq + center;
-    Uc = center;
-  }
-
-  setPwm(Ua,Ub,Uc,TIM_BASE);
-}
-
-float cal_angular_vel(float angle_now,float* speed_rad)
-{
-  float return_value = 0.0f;
-  static float angle_prev = -1.0f;
-  if (angle_prev < 0){
-    	angle_prev=angle_now;
-    	return 0;
-    }
-    float delta_angle=angle_now - angle_prev;
-    if (delta_angle >= 1.6*M_PI){
-    	delta_angle-=2*M_PI;
-      return_value = -1.0f;
-    }
-    if (delta_angle <= -1.6*M_PI){
-      delta_angle+=2*M_PI;
-      return_value = 1.0f;
-    }
-    angle_prev=angle_now;
-    *speed_rad = delta_angle / Ts;
-    return return_value;
-
-
-}
-void cal_Idq(float* current_phase, float angle_el, float* Id, float* Iq)
-{
-	angle_el = _normalizeAngle(angle_el);
+	angle_el = nturt_inv_mc_normalize_angle(angle_el);
   float mid_current = (current_phase[0] + current_phase[1] + current_phase[2]) / 3.0f;
   // 将三相电流转换为两相电流
   float a = current_phase[0] - mid_current;

@@ -7,5 +7,5 @@
 //     int16_t _sv = val_arr[0]-val_arr[1];
 //     int16_t _cv = val_arr[2]-val_arr[3];
     
-//     *angle_el = _normalizeAngle(_atan2(_sv,_cv));  
+//     *angle_el = nturt_inv_mc_normalize_angle(_atan2(_sv,_cv));  
 // }

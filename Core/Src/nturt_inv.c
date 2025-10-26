@@ -56,5 +56,13 @@ void nturt_inv_update_encoder_angle_now(NTURT_INV_TypeDef *handle, uint16_t* val
     int16_t _sv = val_arr[0]-val_arr[1];
     int16_t _cv = val_arr[2]-val_arr[3];
     
-    handle->angle_encoder.angle_now = _normalizeAngle(_atan2(_sv,_cv));  
+    handle->angle_encoder.angle_now = nturt_inv_mc_normalize_angle(_atan2(_sv,_cv));  
+}
+
+void nturt_inv_mc_update_all(NTURT_INV_TypeDef *handle){
+	handle->mc.pole_pairs = handle->angle_encoder.pole_pairs;
+	handle->mc.enc_dir = handle->angle_encoder.enc_dir;
+	handle->mc.period = handle->angle_encoder.period;
+	handle->mc.voltage_power_supply = handle->DCbus.voltage_power_supply;
+	handle->mc.zero_electric_angle = handle->angle_encoder.zero_electric_angle;
 }

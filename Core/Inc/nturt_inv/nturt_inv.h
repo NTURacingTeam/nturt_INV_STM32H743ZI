@@ -42,8 +42,7 @@ typedef struct {
 	int enc_dir; // 1 for normal encoder mounting direction, -1 for reverse
 	float zero_electric_angle;
 	float shaft_angle;
-	float voltage_powersupply;
-	int period; // period for the PWM
+	int period; // period for the PWM 
 	int pole_pairs; // motor pole pairs / encoder pole pairs
 } NTURT_INV_Angle_Encoder_TypeDef;
 
@@ -80,6 +79,7 @@ typedef struct {
 typedef struct {
 	uint16_t report_DCV;
 	uint16_t report_DCA;
+	float voltage_power_supply;
 } NTURT_INV_DCbus_TypeDef;
 
 typedef struct {
@@ -98,6 +98,7 @@ typedef struct {
 	NTURT_INV_CAN_TypeDef can;
 	NTURT_INV_DCbus_TypeDef DCbus;
 	NTURT_INV_PID_TypeDef PID;
+	MotorControlConfig_TypeDef mc;
 }	NTURT_INV_TypeDef;
 
 int16_t maxint16(int16_t a,int16_t b);
@@ -119,6 +120,7 @@ void set_date (uint8_t year, uint8_t month, uint8_t date, uint8_t day);
 bool nturt_inv_init_1(NTURT_INV_TypeDef *handle);
 bool nturt_inv_init_2(NTURT_INV_TypeDef *handle);
 
+void nturt_inv_mc_update_all(NTURT_INV_TypeDef *handle);
 
 void nturt_inv_update_encoder_angle_now(NTURT_INV_TypeDef *handle, uint16_t* val_arr, float_t *rad_pll);
 
