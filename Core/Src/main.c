@@ -65,8 +65,32 @@ static void MPU_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-NTURT_INV_TypeDef nturt_inv_handle = {
-    .nturt_main_run = true,
+NTURT_INV_TypeDef nih = { // nturt_inv_handle
+  .nturt_main_run = true,
+  .angle_encoder = {
+    .enc_index = 0,
+    .enc_sum = 0,
+    .enc_buf = {0},
+  },
+  .SIC_T = {
+    .adc_to_SIC_T_lut = {-750,-696,-608,-553,-512,-479,-452,-428,-407,-388,-370,-355,-340,-326,-314,-301,-290,-279,-269,-259,-250,-241,-232,-224,-216,-208,-200,-193,-186,-179,-172,-166,-160,-153,-147,-142,-136,-130,-125,-119,-114,-109,-104,-99,-94,-89,-84,-80,-75,-71,-66,-62,-58,-53,-49,-45,-41,-37,-33,-29,-26,-22,-18,-14,-11,-7,-4,0,2,6,9,13,16,19,22,26,29,32,35,38,41,44,47,50,53,56,59,62,65,68,71,73,76,79,82,84,87,90,92,95,98,100,103,105,108,110,113,115,118,120,123,125,128,130,132,135,137,139,142,144,146,149,151,153,155,158,160,162,164,167,169,171,173,175,177,179,182,184,186,188,190,192,194,196,198,200,202,204,206,208,210,212,214,216,218,220,222,224,226,228,230,231,233,235,237,239,241,243,245,246,248,250,252,254,256,257,259,261,263,265,266,268,270,272,273,275,277,279,280,282,284,286,287,289,291,292,294,296,297,299,301,302,304,306,307,309,311,312,314,316,317,319,321,322,324,325,327,329,330,332,333,335,337,338,340,341,343,345,346,348,349,351,352,354,355,357,359,360,362,363,365,366,368,369,371,372,374,375,377,378,380,381,383,384,386,387,389,390,392,393,395,396,398,399,401,402,404,405,407,408,409,411,412,414,415,417,418,420,421,422,424,425,427,428,430,431,432,434,435,437,438,440,441,442,444,445,447,448,449,451,452,454,455,456,458,459,461,462,463,465,466,468,469,470,472,473,474,476,477,479,480,481,483,484,485,487,488,490,491,492,494,495,496,498,499,501,502,503,505,506,507,509,510,511,513,514,515,517,518,519,521,522,523,525,526,528,529,530,532,533,534,536,537,538,540,541,542,544,545,546,548,549,550,552,553,554,556,557,558,560,561,562,564,565,566,568,569,570,572,573,574,576,577,578,580,581,582,583,585,586,587,589,590,591,593,594,595,597,598,599,601,602,603,605,606,607,609,610,611,613,614,615,617,618,619,621,622,623,625,626,627,629,630,631,633,634,635,636,638,639,640,642,643,644,646,647,648,650,651,652,654,655,656,658,659,660,662,663,664,666,667,668,670,671,672,674,675,677,678,679,681,682,683,685,686,687,689,690,691,693,694,695,697,698,699,701,702,703,705,706,708,709,710,712,713,714,716,717,718,720,721,723,724,725,727,728,729,731,732,733,735,736,738,739,740,742,743,745,746,747,749,750,751,753,754,756,757,758,760,761,763,764,765,767,768,770,771,772,774,775,777,778,780,781,782,784,785,787,788,789,791,792,794,795,797,798,800,801,802,804,805,807,808,810,811,813,814,815,817,818,820,821,823,824,826,827,829,830,832,833,835,836,838,839,840,842,843,845,846,848,849,851,852,854,856,857,859,860,862,863,865,866,868,869,871,872,874,875,877,878,880,882,883,885,886,888,889,891,893,894,896,897,899,900,902,904,905,907,908,910,912,913,915,916,918,920,921,923,925,926,928,929,931,933,934,936,938,939,941,943,944,946,948,949,951,953,954,956,958,959,961,963,965,966,968,970,971,973,975,977,978,980,982,984,985,987,989,991,992,994,996,998,1000,1001,1003,1005,1007,1009,1010,1012,1014,1016,1018,1020,1021,1023,1025,1027,1029,1031,1033,1034,1036,1038,1040,1042,1044,1046,1048,1050,1052,1054,1055,1057,1059,1061,1063,1065,1067,1069,1071,1073,1075,1077,1079,1081,1083,1085,1087,1089,1091,1093,1095,1097,1100,1102,1104,1106,1108,1110,1112,1114,1116,1118,1121,1123,1125,1127,1129,1131,1134,1136,1138,1140,1142,1145,1147,1149,1151,1154,1156,1158,1160,1163,1165,1167,1169,1172,1174,1176,1179,1181,1184,1186,1188,1191,1193,1195,1198,1200,1203,1205,1208,1210,1213,1215,1218,1220,1223,1225,1228,1230,1233,1235,1238,1241,1243,1246,1248,1251,1254,1256,1259,1262,1264,1267,1270,1273,1275,1278,1281,1284,1287,1289,1292,1295,1298,1301,1304,1307,1310,1312,1315,1318,1321,1324,1327,1330,1333,1337,1340,1343,1346,1349,1352,1355,1358,1362,1365,1368,1371,1375,1378,1381,1385,1388,1391,1395,1398,1402,1405,1409,1412,1416,1419,1423,1426,1430,1434,1437,1441,1445,1448,1452,1456,1460,1464,1468,1471,1475,1479,1483,1487,1491,1496,1500,1504,1508,1512,1516,1521,1525,1529,1534,1538,1542,1547,1551,1556,1561,1565,1570,1575,1579,1584,1589,1594,1599,1604,1609,1614,1619,1624,1629,1635,1640,1645,1651,1656,1662,1667,1673,1678,1684,1690,1696,1702,1708,1714,1720,1726,1733,1739,1745,1752,1758,1765,1772,1779,1785,1792,1800,1807,1814,1821,1829,1836,1844,1852,1860,1868,1876,1884,1892,1901,1909,1918,1927,1936,1945,1954,1964,1973,1983,1993,2003,2014,2024,2035,2046,2057,2068,2080,2091,2103,2116,2128,2141,2154,2168,2181,2195,2210,2224,2239,2255,2271,2287,2304,2321,2338,2356,2375,2394,2414,2435,2456,2478,2501,2524,2549,2574,2600,2628,2657,2686,2718,2750,2785,2821,2859,2899,2942,2987,3035,3087,3142,3202,3266,3336,3412,3497,3590,3695,3814,3951,4111,4301,4534,4830,5227,5804,6778,9092},
+    .U = 0,
+    .V = 0,
+    .W = 0,
+    .max = 0
+  },
+  .Mot_T = {
+    .adc_to_Mot_T_lut = {0},
+    .T = 0
+  },
+  .MCU_T = {
+    .cal_par_1 = 0.0f,
+    .cal_par_2 = 0.0f,
+    .T = 0,
+    .adc_to_MCU_T_lut = {0}
+  },
+  .inv_state = STATE_INIT,
+  .err_state = ERROR_NONE
 };
 
 // for uart debug, not used currently
@@ -111,22 +135,8 @@ uint8_t oc_sw_buf[SOFT_OC_TIME] = {0};
 uint16_t oc_sw_index = 0;
 uint16_t oc_sw_sum = 0;
 
-/// for angle encoder
-uint8_t enc_buf[ENC_TIME] = {0};
-uint16_t enc_index = 0;
-uint16_t enc_sum = 0;
-
-/// for temperature reading
-int16_t T_Mot = 0;
-int16_t T_MCU = 0;
-int16_t T_SIC_Report = 0;
-int16_t T_U;
-int16_t T_V;
-int16_t T_W;
+// DC voltage reading
 uint16_t report_DCV;
-const int16_t adc_to_SIC_T_lut[1024] = {-750,-696,-608,-553,-512,-479,-452,-428,-407,-388,-370,-355,-340,-326,-314,-301,-290,-279,-269,-259,-250,-241,-232,-224,-216,-208,-200,-193,-186,-179,-172,-166,-160,-153,-147,-142,-136,-130,-125,-119,-114,-109,-104,-99,-94,-89,-84,-80,-75,-71,-66,-62,-58,-53,-49,-45,-41,-37,-33,-29,-26,-22,-18,-14,-11,-7,-4,0,2,6,9,13,16,19,22,26,29,32,35,38,41,44,47,50,53,56,59,62,65,68,71,73,76,79,82,84,87,90,92,95,98,100,103,105,108,110,113,115,118,120,123,125,128,130,132,135,137,139,142,144,146,149,151,153,155,158,160,162,164,167,169,171,173,175,177,179,182,184,186,188,190,192,194,196,198,200,202,204,206,208,210,212,214,216,218,220,222,224,226,228,230,231,233,235,237,239,241,243,245,246,248,250,252,254,256,257,259,261,263,265,266,268,270,272,273,275,277,279,280,282,284,286,287,289,291,292,294,296,297,299,301,302,304,306,307,309,311,312,314,316,317,319,321,322,324,325,327,329,330,332,333,335,337,338,340,341,343,345,346,348,349,351,352,354,355,357,359,360,362,363,365,366,368,369,371,372,374,375,377,378,380,381,383,384,386,387,389,390,392,393,395,396,398,399,401,402,404,405,407,408,409,411,412,414,415,417,418,420,421,422,424,425,427,428,430,431,432,434,435,437,438,440,441,442,444,445,447,448,449,451,452,454,455,456,458,459,461,462,463,465,466,468,469,470,472,473,474,476,477,479,480,481,483,484,485,487,488,490,491,492,494,495,496,498,499,501,502,503,505,506,507,509,510,511,513,514,515,517,518,519,521,522,523,525,526,528,529,530,532,533,534,536,537,538,540,541,542,544,545,546,548,549,550,552,553,554,556,557,558,560,561,562,564,565,566,568,569,570,572,573,574,576,577,578,580,581,582,583,585,586,587,589,590,591,593,594,595,597,598,599,601,602,603,605,606,607,609,610,611,613,614,615,617,618,619,621,622,623,625,626,627,629,630,631,633,634,635,636,638,639,640,642,643,644,646,647,648,650,651,652,654,655,656,658,659,660,662,663,664,666,667,668,670,671,672,674,675,677,678,679,681,682,683,685,686,687,689,690,691,693,694,695,697,698,699,701,702,703,705,706,708,709,710,712,713,714,716,717,718,720,721,723,724,725,727,728,729,731,732,733,735,736,738,739,740,742,743,745,746,747,749,750,751,753,754,756,757,758,760,761,763,764,765,767,768,770,771,772,774,775,777,778,780,781,782,784,785,787,788,789,791,792,794,795,797,798,800,801,802,804,805,807,808,810,811,813,814,815,817,818,820,821,823,824,826,827,829,830,832,833,835,836,838,839,840,842,843,845,846,848,849,851,852,854,856,857,859,860,862,863,865,866,868,869,871,872,874,875,877,878,880,882,883,885,886,888,889,891,893,894,896,897,899,900,902,904,905,907,908,910,912,913,915,916,918,920,921,923,925,926,928,929,931,933,934,936,938,939,941,943,944,946,948,949,951,953,954,956,958,959,961,963,965,966,968,970,971,973,975,977,978,980,982,984,985,987,989,991,992,994,996,998,1000,1001,1003,1005,1007,1009,1010,1012,1014,1016,1018,1020,1021,1023,1025,1027,1029,1031,1033,1034,1036,1038,1040,1042,1044,1046,1048,1050,1052,1054,1055,1057,1059,1061,1063,1065,1067,1069,1071,1073,1075,1077,1079,1081,1083,1085,1087,1089,1091,1093,1095,1097,1100,1102,1104,1106,1108,1110,1112,1114,1116,1118,1121,1123,1125,1127,1129,1131,1134,1136,1138,1140,1142,1145,1147,1149,1151,1154,1156,1158,1160,1163,1165,1167,1169,1172,1174,1176,1179,1181,1184,1186,1188,1191,1193,1195,1198,1200,1203,1205,1208,1210,1213,1215,1218,1220,1223,1225,1228,1230,1233,1235,1238,1241,1243,1246,1248,1251,1254,1256,1259,1262,1264,1267,1270,1273,1275,1278,1281,1284,1287,1289,1292,1295,1298,1301,1304,1307,1310,1312,1315,1318,1321,1324,1327,1330,1333,1337,1340,1343,1346,1349,1352,1355,1358,1362,1365,1368,1371,1375,1378,1381,1385,1388,1391,1395,1398,1402,1405,1409,1412,1416,1419,1423,1426,1430,1434,1437,1441,1445,1448,1452,1456,1460,1464,1468,1471,1475,1479,1483,1487,1491,1496,1500,1504,1508,1512,1516,1521,1525,1529,1534,1538,1542,1547,1551,1556,1561,1565,1570,1575,1579,1584,1589,1594,1599,1604,1609,1614,1619,1624,1629,1635,1640,1645,1651,1656,1662,1667,1673,1678,1684,1690,1696,1702,1708,1714,1720,1726,1733,1739,1745,1752,1758,1765,1772,1779,1785,1792,1800,1807,1814,1821,1829,1836,1844,1852,1860,1868,1876,1884,1892,1901,1909,1918,1927,1936,1945,1954,1964,1973,1983,1993,2003,2014,2024,2035,2046,2057,2068,2080,2091,2103,2116,2128,2141,2154,2168,2181,2195,2210,2224,2239,2255,2271,2287,2304,2321,2338,2356,2375,2394,2414,2435,2456,2478,2501,2524,2549,2574,2600,2628,2657,2686,2718,2750,2785,2821,2859,2899,2942,2987,3035,3087,3142,3202,3266,3336,3412,3497,3590,3695,3814,3951,4111,4301,4534,4830,5227,5804,6778,9092};
-float ts_cal1;
-float ts_cal2;
 
 /// FOC and motor control variables
 float open_loop_timestamp = 0;
@@ -173,17 +183,13 @@ float prev_percent_trq_request = 0.0f;
 float abs_prev_percent = 0.0f;
 uint16_t current_offset[4];
 float current_phase[3];
-int16_t Mot_Conv[1024] = {0};
 float Mot_Curr = MOT_CURR;
-int16_t MCU_Conv[1024] = {0};
 const float DCVPLSB = 0.00897;     // DCVPLSB = 451*3.3/adc3_range 
 const float DCAPLSB = 0.0402930f;   // DCAPLSB = 3.3/20e-3/adc1_range 
 float max_ramp = 1/FREQ/RAMP_TIME_DERATE;
 uint8_t fast_stop_enable = 1;
 
 // inverter state and error state
-INV_Statustypedef inverter_state = STATE_INIT;
-INV_Errortypedef error_state = ERROR_NONE;
 
 
 /// CAN
@@ -271,14 +277,7 @@ int main(void)
   pid_controller_current_OCP.limit = voltage_limit;
   // uint8_t wlooptext[] = "This is STM32 working with FatFs in main loop\n"; /* File write buffer */
   // SD_log_buf[0][0].LGSTATE = 0;
-  for (size_t i = 0; i < 1024; i++)
-  {
-    Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
-    // if (Mot_Conv[i] < 0)
-    // {
-    //   Mot_Conv[i] = 0;
-    // }
-  }
+  for (size_t i = 0; i < 1024; i++) nih.Mot_T.adc_to_Mot_T_lut[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
   
   /* USER CODE END 1 */
 
@@ -338,14 +337,14 @@ int main(void)
 
   //Get temperature sensor calibration data
   /* 0x1FF1E820 Calibration ADC value at 30 °C = 0x2fc0, 12224 */
-  ts_cal1 = (float) *(uint16_t*) (TEMPSENSOR_CAL1_ADDR);
+  nih.MCU_T.cal_par_1 = (float) *(uint16_t*) (TEMPSENSOR_CAL1_ADDR);
   /* 0x1FF1E840 Calibration ADC value at 110 °C = 0x3cb4, 15540 */
-  ts_cal2 = (float) *(uint16_t*) (TEMPSENSOR_CAL2_ADDR);
+  nih.MCU_T.cal_par_2 = (float) *(uint16_t*) (TEMPSENSOR_CAL2_ADDR);
 
   //Generate MCU conversion table
   for (size_t i = 0; i < 1024; i++)
   {
-    MCU_Conv[i] = (int16_t) roundf(MCU_TemperatureCalculate(i<<6)*10);
+    nih.MCU_T.adc_to_MCU_T_lut[i] = (int16_t) roundf(nturt_inv_MCU_TemperatureCalculate(&nih, i<<6)*10);
   }
   
 
@@ -471,9 +470,9 @@ int main(void)
   f_open(&SD_File,TextFPath,FA_OPEN_APPEND|FA_WRITE);
 
   HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
-  inverter_state = STATE_READY;
-  error_state = ERROR_NONE;
-  // INV_Statustypedef last_state = inverter_state;
+  nih.inv_state = STATE_READY;
+  nih.err_state = ERROR_NONE;
+  // INV_Statustypedef last_state = inv_state;
 
   #ifdef TIMING
   prev_time = __HAL_TIM_GET_COUNTER(&htim5);
@@ -677,7 +676,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   // Check which version of the timer triggered this callback and toggle LED
   if (htim == &htim1)
   {
-    if(!nturt_inv_toggle_and_get_run_state(&nturt_inv_handle)) return; // skip once every two trigger
+    if(!nturt_inv_toggle_and_get_run_state(&nih)) return; // skip once every two trigger
 
     HAL_GPIO_TogglePin(LED_TIM_GPIO_Port,LED_TIM_Pin);
     uint16_t ADC1_arr[4] = {0};
@@ -699,7 +698,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
       ADC3_arr[i] = DMA_ADC3_arr[i];
     }    
-    if(inverter_state == STATE_RUNNING)
+    if(nih.inv_state == STATE_RUNNING)
     {      
       float delta = percent_trq_request - prev_percent_trq_request;
       delta = _constrain(delta,-max_ramp,max_ramp);
@@ -725,7 +724,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       prev_percent_trq_request = 0.0f;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
     }
-    if(inverter_state == STATE_READY|| inverter_state == STATE_ERROR)
+    if(nih.inv_state == STATE_READY|| nih.inv_state == STATE_ERROR)
     {
       PID_reset(&pid_controller_current_Id);
       PID_reset(&pid_controller_current_Iq);
@@ -765,12 +764,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         #endif
       }
     }
-    enc_sum -= enc_buf[enc_index];
-    enc_buf[enc_index] = enc_err;
-    enc_sum += enc_buf[enc_index];
-    if (enc_sum > ENC_TIME/2)
+    nih.angle_encoder.enc_sum -= nih.angle_encoder.enc_buf[nih.angle_encoder.enc_index];
+  
+    nih.angle_encoder.enc_buf[nih.angle_encoder.enc_index] = enc_err;
+    nih.angle_encoder.enc_sum += nih.angle_encoder.enc_buf[nih.angle_encoder.enc_index];
+  
+    if (nih.angle_encoder.enc_sum > ENC_TIME/2)
+  
     {
-      if (inverter_state == STATE_RUNNING)
+      if (nih.inv_state == STATE_RUNNING)
       {
         #ifndef OPEN_LOOP_SPEED
         Enter_ERROR_State(ERROR_ENC);
@@ -816,7 +818,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     oc_sw_sum += oc_sw_buf[oc_sw_index];
     if (oc_sw_sum > SOFT_OC_TIME/2)
     {
-      if (inverter_state == STATE_RUNNING)
+      if (nih.inv_state == STATE_RUNNING)
       {
         Enter_ERROR_State(ERROR_INSTANT_OC);
       }    
@@ -885,11 +887,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     if (indexLED == freq/2)
     {
-    	if(inverter_state == STATE_READY)
+    	if(nih.inv_state == STATE_READY)
       {
         HAL_GPIO_TogglePin(LED_RUN_GPIO_Port, LED_RUN_Pin);
       }
-      else if(inverter_state == STATE_ERROR)
+      else if(nih.inv_state == STATE_ERROR)
       {
         HAL_GPIO_TogglePin(LED_ERR_GPIO_Port,LED_ERR_Pin);
       }
@@ -912,13 +914,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
 
     uint16_t report_status = 0;
-    if(inverter_state == STATE_READY) 
+    if(nih.inv_state == STATE_READY) 
     {
       report_status |= REPORT_STATUS_READY;
-    }else if(inverter_state == STATE_RUNNING)
+    }else if(nih.inv_state == STATE_RUNNING)
     {
       report_status |= REPORT_STATUS_ENABLED;
-    }else if(inverter_state == STATE_ERROR)
+    }else if(nih.inv_state == STATE_ERROR)
     {
       report_status |= REPORT_STATUS_FAULT;
     }
@@ -949,7 +951,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGHR = SD_log_time.Hours;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGMIN = SD_log_time.Minutes;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSEC = SD_log_time.Seconds;
-    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGERR = error_state;
+    SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGERR = nih.err_state;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGSUBSEC = SD_log_subsec;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCV = report_DCV;
     SD_log_buf[SD_wr_log_buf_num][SD_wr_log_index%3600].LGDCA = report_DCA;
@@ -985,7 +987,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     SD_log_subsec++;
     SD_wr_log_index++;
 
-    if(inverter_state == STATE_RUNNING)
+    if(nih.inv_state == STATE_RUNNING)
     {
       oc_hw_sum -= oc_hw_buf[oc_hw_index];
       if (HAL_GPIO_ReadPin(OC_Fault_GPIO_Port,OC_Fault_Pin) == GPIO_PIN_RESET)
@@ -1010,12 +1012,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     #ifdef CAN_OT_FAULT
     //CAN fault detect
-    if(CAN_Timer == freq && inverter_state == STATE_RUNNING)
+    if(CAN_Timer == freq && nih.inv_state == STATE_RUNNING)
     {
       enable_hw_oc = 0;
       HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
       HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
-      inverter_state = STATE_READY;
+      nih.inv_state = STATE_READY;
     }
     #endif
 
@@ -1058,7 +1060,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN)
   }
   if(GPIO_PIN == GPIO_PIN_6)
   {
-    if (inverter_state == STATE_RUNNING)
+    if (nih.inv_state == STATE_RUNNING)
     {
       // Enter_ERROR_State(ERROR_HW_OC);
     }     
@@ -1092,12 +1094,12 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       {
         int16_t torque_command;
         control = RxData1[0] | (uint16_t)RxData1[1] << 8;
-        if(inverter_state != STATE_ERROR)
+        if(nih.inv_state != STATE_ERROR)
         {
           // enable
-          if(control & CTRL_ENABLE && voltage_power_supply >= 20 && inverter_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) == GPIO_PIN_SET )
+          if(control & CTRL_ENABLE && voltage_power_supply >= 20 && nih.inv_state == STATE_READY && HAL_GPIO_ReadPin(GATE_Ready_GPIO_Port,GATE_Ready_Pin) == GPIO_PIN_SET )
           {
-            inverter_state = STATE_RUNNING;
+            nih.inv_state = STATE_RUNNING;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_SET);
             percent_trq_request = 0;
@@ -1116,19 +1118,20 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
               oc_sw_buf[i] = 0;
             }
 
-            enc_sum = 0;
-            enc_index = 0;
+            nih.angle_encoder.enc_sum = 0;
+          
+            nih.angle_encoder.enc_index = 0;
             for (size_t i = 0; i < ENC_TIME; i++)
             {
-              enc_buf[i] = 0;
+              nih.angle_encoder.enc_buf[i] = 0;
             }
             
             
             HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_SET);
           // disable
-          }else if(!(control & CTRL_ENABLE) && inverter_state == STATE_RUNNING) 
+          }else if(!(control & CTRL_ENABLE) && nih.inv_state == STATE_RUNNING) 
           {
-            inverter_state = STATE_READY;
+            nih.inv_state = STATE_READY;
             HAL_GPIO_WritePin(LED_ERR_GPIO_Port,LED_ERR_Pin,GPIO_PIN_RESET);
             percent_trq_request = 0;
             enable_hw_oc = 0;
@@ -1141,10 +1144,10 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
           }
         }
         // fault reset
-        if((control & CTRL_FAULT_RESET) && inverter_state == STATE_ERROR ) 
+        if((control & CTRL_FAULT_RESET) && nih.inv_state == STATE_ERROR ) 
         {
-          inverter_state = STATE_READY;
-          error_state = ERROR_NONE;
+          nih.inv_state = STATE_READY;
+          nih.err_state = ERROR_NONE;
         }
         torque_command = RxData1[2] | RxData1[3] << 8;
         percent_trq_request = (float)torque_command/1000;
@@ -1178,7 +1181,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
       }
       else if (RxHeader1.Identifier == 0x200)
       {
-        if(inverter_state == STATE_RUNNING)
+        if(nih.inv_state == STATE_RUNNING)
         {
           return;
         }
@@ -1255,11 +1258,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
           Mot_Curr = val;
           for (size_t i = 0; i < 1024; i++)
           {
-            Mot_Conv[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
-            // if (Mot_Conv[i] < 0)
-            // {
-            //   Mot_Conv[i] = 0;
-            // }
+            nih.Mot_T.adc_to_Mot_T_lut[i] = (int16_t)10*((float)(1650-(3300*i/1024))/Mot_Curr/3.795-1000/3.795);
           }
         
         default:
@@ -1358,8 +1357,8 @@ void Config_Fdcan1(void)
 
 void Enter_ERROR_State(INV_Errortypedef error)
 {
-  inverter_state = STATE_ERROR;
-  error_state = error;
+  nih.inv_state = STATE_ERROR;
+  nih.err_state = error;
   enable_hw_oc = 0;
   HAL_GPIO_WritePin(Motor_Enable_GPIO_Port,Motor_Enable_Pin,GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LED_RUN_GPIO_Port,LED_RUN_Pin,GPIO_PIN_RESET);
@@ -1369,15 +1368,6 @@ void Enter_ERROR_State(INV_Errortypedef error)
   LowPassFilter_reset(&filter_current_Iq);
   LowPassFilter_reset(&filter_current_Id);
   // LowPassFilter_reset(&filter_RPM);
-}
-
-float MCU_TemperatureCalculate(uint16_t ts_data)
-{
- 
-//  return (80 * (ts_data - ts_cal1)) / (ts_cal2 - ts_cal1) + 30;
-
-  return MCU_MapValue(ts_data, ts_cal1, ts_cal2, TEMPSENSOR_CAL1_TEMP, TEMPSENSOR_CAL2_TEMP);
-  return 1;
 }
 
 void CAN_Send_State(uint16_t DCV, int16_t DCA)
@@ -1394,39 +1384,39 @@ void CAN_Send_Status(uint16_t report_status ,int16_t FB_Torque, int16_t Speed)
 {
   uint8_t StatusData[6];
   StatusData[0] = report_status;
-  StatusData[1] = error_state;
+  StatusData[1] = nih.err_state;
   StatusData[2] = FB_Torque;
   StatusData[3] = FB_Torque >> 8;
   StatusData[4] = Speed;
   StatusData[5] = Speed >> 8;
-  // StatusData[6] = error_state;
+  // StatusData[6] = err_state;
   CAN1_SetMsg(&StatusHeader,StatusData);
 }
 
 void CAN_Send_Temp(uint16_t ADC_arr[6])
 {
   uint8_t TempData[6];
-  T_Mot = Mot_Conv[ADC_arr[2]>>6];
-  T_MCU = MCU_Conv[ADC_arr[1]>>6];
-  T_U = adc_to_SIC_T_lut[ADC_arr[3]>>6];
-  T_V = adc_to_SIC_T_lut[ADC_arr[4]>>6];
-  T_W = adc_to_SIC_T_lut[ADC_arr[5]>>6];
-  T_SIC_Report = maxint16(T_U,maxint16(T_V,T_W));
+  nih.Mot_T.T = nih.Mot_T.adc_to_Mot_T_lut[ADC_arr[2]>>6];
+  nih.MCU_T.T = nih.MCU_T.adc_to_MCU_T_lut[ADC_arr[1]>>6];
+  nih.SIC_T.U = nih.SIC_T.adc_to_SIC_T_lut[ADC_arr[3]>>6];
+  nih.SIC_T.V = nih.SIC_T.adc_to_SIC_T_lut[ADC_arr[4]>>6];
+  nih.SIC_T.W = nih.SIC_T.adc_to_SIC_T_lut[ADC_arr[5]>>6];
+  nih.SIC_T.max = maxint16(nih.SIC_T.U,maxint16(nih.SIC_T.V,nih.SIC_T.W));
   //OTP
-  if(maxint16(T_SIC_Report,T_MCU) > MOS_OTP)
+  if(maxint16(nih.SIC_T.max,nih.MCU_T.T) > MOS_OTP)
   {
     // Enter_ERROR_State(ERROR_INV_OT);
   }
-  if(T_Mot > MOT_OTP || T_Mot < MOT_UTP)
+  if(nih.Mot_T.T > MOT_OTP || nih.Mot_T.T < MOT_UTP)
   {
     Enter_ERROR_State(ERROR_MOT_OT);
   }
-  TempData[0] = T_SIC_Report;
-  TempData[1] = T_SIC_Report >> 8;
-  TempData[2] = T_MCU;
-  TempData[3] = T_MCU >> 8;
-  TempData[4] = T_Mot;
-  TempData[5] = T_Mot >> 8;
+  TempData[0] = nih.SIC_T.max;
+  TempData[1] = nih.SIC_T.max >> 8;
+  TempData[2] = nih.MCU_T.T;
+  TempData[3] = nih.MCU_T.T >> 8;
+  TempData[4] = nih.Mot_T.T;
+  TempData[5] = nih.Mot_T.T >> 8;
   CAN1_SetMsg(&TempHeader,TempData);
 }
 

@@ -16,3 +16,9 @@ bool nturt_inv_toggle_and_get_run_state(NTURT_INV_TypeDef *handle)
 		handle->nturt_main_run = !handle->nturt_main_run;
 		return handle->nturt_main_run;
 }
+
+float nturt_inv_MCU_TemperatureCalculate(NTURT_INV_TypeDef *handle, uint16_t ts_data)
+{
+  return MCU_MapValue(ts_data, handle->MCU_T.cal_par_1, handle->MCU_T.cal_par_2, TEMPSENSOR_CAL1_TEMP, TEMPSENSOR_CAL2_TEMP);
+  return 1;
+}

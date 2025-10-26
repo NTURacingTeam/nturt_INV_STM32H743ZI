@@ -8,4 +8,4 @@
 #include "inverter_state.h"
 
 
-// extern INV_Statustypedef inverter_state = INV_STARTING;
+// extern INV_Statustypedef inv_state = INV_STARTING;
